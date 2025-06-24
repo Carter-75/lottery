@@ -1,7 +1,54 @@
-@import 'bulma/css/bulma.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-html,
+:root {
+  --foreground-rgb: 220, 220, 220; /* text-text */
+  --background-start-rgb: 30, 30, 30; /* bg-color */
+  --background-end-rgb: 30, 30, 30; /* bg-color */
+
+  --card-bg: 37, 37, 38; /* card-bg */
+  --text-color: 220, 220, 220; /* text-color */
+  --text-secondary-color: 170, 170, 170; 
+  --accent-color: 255, 204, 0; /* accent-color */
+  --button-color: 14, 99, 156; /* button-color */
+  --button-hover-color: 17, 119, 187; /* button-hover */
+  --run-button-color: 16, 124, 16; /* run-button-color */
+  --run-button-hover-color: 21, 160, 21; /* run-button-hover */
+  --reset-button-color: 202, 80, 16; /* reset-button-color */
+  --reset-button-hover-color: 233, 90, 12; /* reset-button-hover */
+  --entry-bg: 45, 45, 45; /* entry-bg */
+  --entry-border: 62, 62, 66; /* entry-border */
+}
+
 body {
-  color: var(--bulma-text-strong);
-  background: var(--bulma-scheme-main);
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-start-rgb));
+  padding: 0;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+  overflow: hidden; /* Prevent scrolling to keep canvas in full view */
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Custom theme colors for tailwind */
+@layer base {
+  body {
+    @apply bg-background text-text;
+  }
 }
