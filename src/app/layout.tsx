@@ -1,6 +1,7 @@
 import "./globals.css";
 
 import type { Metadata } from "next";
+import PortfolioFrame from "@/components/PortfolioFrame";
 
 export const metadata: Metadata = {
   title: "Lottery Winnings Calculator",
@@ -14,7 +15,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <PortfolioFrame />
+      </body>
     </html>
   );
 }
