@@ -5,10 +5,12 @@ interface CardProps {
   className?: string;
 }
 
-const Card: React.FC<CardProps> = ({ children, className = '' }) => {
+const Card: React.FC<CardProps> = ({ children, className }) => {
   return (
-    <div className={`bg-card rounded-lg p-4 sm:p-6 border border-entry-border ${className}`}>
-      {children}
+    <div className={`card ${className || ''}`}>
+      <div className="card-content">
+        {children}
+      </div>
     </div>
   );
 };

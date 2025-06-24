@@ -1,54 +1,99 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'bulma/css/bulma.css';
 
 :root {
-  --foreground-rgb: 220, 220, 220; /* text-text */
-  --background-start-rgb: 30, 30, 30; /* bg-color */
-  --background-end-rgb: 30, 30, 30; /* bg-color */
-
-  --card-bg: 37, 37, 38; /* card-bg */
-  --text-color: 220, 220, 220; /* text-color */
-  --text-secondary-color: 170, 170, 170; 
-  --accent-color: 255, 204, 0; /* accent-color */
-  --button-color: 14, 99, 156; /* button-color */
-  --button-hover-color: 17, 119, 187; /* button-hover */
-  --run-button-color: 16, 124, 16; /* run-button-color */
-  --run-button-hover-color: 21, 160, 21; /* run-button-hover */
-  --reset-button-color: 202, 80, 16; /* reset-button-color */
-  --reset-button-hover-color: 233, 90, 12; /* reset-button-hover */
-  --entry-bg: 45, 45, 45; /* entry-bg */
-  --entry-border: 62, 62, 66; /* entry-border */
+  --green-light: #76c893;
+  --green-dark: #166534;
+  --gold-light: #fde047; /* yellow-300 */
+  --gold-dark: #f59e0b;  /* amber-500 */
+  --background-dark: #1a1a1a;
+  --background-light: #2a2a2a;
+  --text-color: #e5e5e5;
+  --text-color-dark: #a3a3a3;
 }
 
+/* Override Bulma's variables */
+:root {
+    --bulma-body-background-color: var(--background-dark);
+    --bulma-body-color: var(--text-color);
+    --bulma-scheme-main: var(--background-dark);
+    --bulma-scheme-main-bis: #222;
+    --bulma-scheme-main-ter: #333;
+    --bulma-scheme-invert: var(--text-color);
+    --bulma-text: var(--text-color);
+    --bulma-text-strong: var(--gold-light);
+
+    --bulma-link: var(--green-light);
+    --bulma-link-hover: var(--gold-light);
+
+    --bulma-primary: var(--green-dark);
+    --bulma-primary-invert: var(--gold-light);
+
+    --bulma-input-background-color: var(--background-light);
+    --bulma-input-color: var(--text-color);
+    --bulma-input-border-color: var(--green-dark);
+    --bulma-input-placeholder-color: var(--text-color-dark);
+    --bulma-input-focus-border-color: var(--green-light);
+
+    --bulma-card-background-color: var(--background-light);
+    --bulma-card-header-color: var(--gold-light);
+    --bulma-card-color: var(--text-color);
+
+    --bulma-box-background-color: var(--background-light);
+    --bulma-box-color: var(--text-color);
+
+    --bulma-notification-background-color: var(--background-light);
+}
+
+html,
 body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-start-rgb));
-  padding: 0;
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
-    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
-  overflow: hidden; /* Prevent scrolling to keep canvas in full view */
+  color: var(--text-color);
+  background: var(--background-dark);
 }
 
 a {
-  color: inherit;
+  color: var(--green-light);
   text-decoration: none;
 }
 
-* {
-  box-sizing: border-box;
+a:hover {
+  color: var(--gold-light);
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+.money-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: -1;
 }
 
-/* Custom theme colors for tailwind */
-@layer base {
-  body {
-    @apply bg-background text-text;
-  }
+.dollar-sign {
+    position: absolute;
+    font-size: 2rem;
+    color: var(--green-dark);
+    user-select: none;
+    animation: fall linear forwards;
+}
+
+@keyframes fall {
+    to {
+        transform: translateY(105vh);
+        opacity: 0;
+    }
+}
+
+.notification.is-themed-info {
+    background-color: var(--background-light);
+    color: var(--text-color);
+    border-left: 4px solid var(--gold-dark);
+}
+
+.hero.is-primary {
+    background-color: var(--green-dark);
+}
+.hero.is-primary .title,
+.hero.is-primary .subtitle {
+    color: var(--text-color);
 }

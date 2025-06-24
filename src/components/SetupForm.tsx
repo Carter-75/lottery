@@ -2,144 +2,108 @@
 
 import React, { useState } from 'react';
 import Card from './Card';
-import { calculateInitialData } from '../lib/lottery-logic';
-import { LotteryData } from '../lib/types';
+import { UserInputParameters, LotteryData } from '../lib/types';
+import { calculateInitialLotteryData } from '../lib/lottery-logic';
 
 interface SetupFormProps {
   onSetupComplete: (data: LotteryData) => void;
 }
 
 const SetupForm: React.FC<SetupFormProps> = ({ onSetupComplete }) => {
-  const [formData, setFormData] = useState({
-    m: '',
-    lst: '44.65',
-    at: '44.65',
-    mal: '30',
-    s: '',
-    yo: '',
-    dd: '',
-    ml: '',
-    investment_tax_rate: '20',
-    inflation_rate: '3.5',
-    freq: 'daily',
-    date: new Date().toISOString().split('T')[0],
+  const [formData, setFormData] = useState<UserInputParameters>({
+    total_winnings: 0,
+    lump_sum_tax: 37,
+    annuity_tax: 25,
+    savings_apr: 5,
+    age: 0,
+    death_age: 0,
+    years: 30,
+    ml: 0,
+    investment_tax_rate: 20.0,
+    inflation_rate: 3.5,
   });
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState('');
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'number' ? parseFloat(value) || 0 : value,
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    try {
-        const requiredFields: (keyof typeof formData)[] = ['m', 's', 'yo', 'dd', 'ml', 'investment_tax_rate', 'inflation_rate'];
-        for(const field of requiredFields) {
-            if(!formData[field]) {
-                throw new Error(`Field "${field}" is required.`);
-            }
-        }
+    setError('');
+    if (formData.age <= 0 || formData.death_age <= 0) {
+        setError("Please enter a valid age and life expectancy.");
+        return;
+    }
+    if (formData.death_age <= formData.age) {
+        setError("Life expectancy must be greater than current age.");
+        return;
+    }
 
-      const initialData = calculateInitialData({
-        m: parseFloat(formData.m),
-        lst: parseFloat(formData.lst),
-        at: parseFloat(formData.at),
-        mal: parseInt(formData.mal, 10),
-        s: parseFloat(formData.s),
-        yo: parseInt(formData.yo, 10),
-        dd: parseInt(formData.dd, 10),
-        ml: parseFloat(formData.ml),
-        investment_tax_rate: parseFloat(formData.investment_tax_rate),
-        inflation_rate: parseFloat(formData.inflation_rate),
-        current_date: new Date(formData.date),
-      });
+    try {
+      const initialData = calculateInitialLotteryData(formData);
       onSetupComplete(initialData);
     } catch (err: any) {
-      setError(err.message || 'An error occurred. Please check your inputs.');
+        setError(err.message || "An unexpected error occurred.");
     }
   };
 
-  const formFields = [
-    { id: "m", label: "Total money won ($):", type: "number", required: true },
-    { id: "lst", label: "Lump sum tax (%):", type: "number", required: true },
-    { id: "at", label: "Annual installment tax (%):", type: "number", required: true },
-    { id: "mal", label: "Years for annual installments:", type: "number", required: true },
-    { id: "s", label: "Savings account APR (%):", type: "number", required: true },
-    { id: "yo", label: "Your current age:", type: "number", required: true },
-    { id: "dd", label: "Your expected age at death:", type: "number", required: true },
-    { id: "ml", label: "Amount you want left at death ($):", type: "number", required: true },
-    { id: "investment_tax_rate", label: "Tax Rate on Investment Gains (%):", type: "number", required: true, note: "20% is a recent estimate for the top federal bracket." },
-    { id: "inflation_rate", label: "Estimated Annual Inflation (%):", type: "number", required: true, note: "3.5% is a recent approximate annual rate." },
-  ];
+  const formRow = (label: string, name: keyof UserInputParameters, type: string, helpText?: string, props: Record<string, any> = {}) => (
+    <div className="field">
+      <label htmlFor={name} className="label">{label}</label>
+      <div className="control">
+        <input
+          className="input"
+          type={type}
+          id={name}
+          name={name}
+          value={String(formData[name])}
+          onChange={handleChange}
+          required
+          {...props}
+        />
+      </div>
+      {helpText && <p className="help">{helpText}</p>}
+    </div>
+  );
 
   return (
-    <Card>
-      <h2 className="text-2xl font-bold text-accent mb-4 text-center">Lottery Setup</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {formFields.map(field => (
-          <div key={field.id}>
-            <label htmlFor={field.id} className="block text-sm font-medium text-text-secondary mb-1">
-              {field.label}
-            </label>
-            <input
-              type={field.type}
-              id={field.id}
-              name={field.id}
-              value={formData[field.id as keyof typeof formData]}
-              onChange={handleChange}
-              required={field.required}
-              className="w-full bg-entry-bg text-text border border-entry-border rounded-md p-2 focus:ring-accent focus:border-accent"
-              placeholder={field.type === 'number' ? '0' : ''}
-            />
-            {field.note && <p className="text-xs text-text-secondary mt-1">{field.note}</p>}
-          </div>
-        ))}
+    <form onSubmit={handleSubmit}>
+      <Card>
+        <h2 className="title is-3 has-text-centered" style={{ color: 'var(--gold-light)' }}>Lottery Setup</h2>
+        <hr className="my-3"/>
         
-        <div>
-            <label htmlFor="freq" className="block text-sm font-medium text-text-secondary mb-1">
-                Withdrawal frequency:
-            </label>
-            <select
-                id="freq"
-                name="freq"
-                value={formData.freq}
-                onChange={handleChange}
-                className="w-full bg-entry-bg text-text border border-entry-border rounded-md p-2 focus:ring-accent focus:border-accent"
-            >
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="biweekly">Biweekly</option>
-                <option value="monthly">Monthly</option>
-            </select>
+        <div className="columns is-multiline">
+            <div className="column is-full">{formRow("Total money won ($)", "total_winnings", "number", undefined, {step: 1000000})}</div>
+            <div className="column is-6">{formRow("Lump sum tax (%)", "lump_sum_tax", "number", "Estimated combined tax on lump sum.")}</div>
+            <div className="column is-6">{formRow("Annual installment tax (%)", "annuity_tax", "number", "Estimated combined tax on annual payments.")}</div>
+            <div className="column is-full">{formRow("Savings account APR (%)", "savings_apr", "number", "The estimated annual return for all investments.", {step: 0.1})}</div>
+            <div className="column is-6">{formRow("Your current age", "age", "number")}</div>
+            <div className="column is-6">{formRow("Your expected age at death", "death_age", "number")}</div>
+            <div className="column is-6">{formRow("Years for annual installments", "years", "number", "The number of years the annuity pays out.")}</div>
+            <div className="column is-6">{formRow("Amount you want left at death ($)", "ml", "number", "Goal amount, in today's dollars, for inheritance.", {step: 100000})}</div>
         </div>
 
-        <div>
-            <label htmlFor="date" className="block text-sm font-medium text-text-secondary mb-1">
-                Today's date:
-            </label>
-            <input
-                type="date"
-                id="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                required
-                className="w-full bg-entry-bg text-text border border-entry-border rounded-md p-2 focus:ring-accent focus:border-accent"
-            />
+        <div className="notification is-themed-info mt-5">
+            {formRow("Tax Rate on Investment Gains (%)", "investment_tax_rate", "number", "20% is a recent estimate for the top federal bracket.", { step: "0.1", min: "0", max: "100" })}
+            {formRow("Estimated Annual Inflation (%)", "inflation_rate", "number", "3.5% is a recent approximate annual rate.", { step: "0.1", min: "0", max: "100" })}
         </div>
+        
+        {error && <div className="notification is-danger mt-4">{error}</div>}
 
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-
-        <button
-          type="submit"
-          className="w-full bg-run-button hover:bg-run-button-hover text-white font-bold py-3 px-4 rounded-md transition-colors duration-300"
-        >
-          Calculate Initial Withdrawals
-        </button>
-      </form>
-    </Card>
+        <div className="field mt-5">
+          <div className="control">
+            <button type="submit" className="button is-primary is-fullwidth is-large is-uppercase has-text-weight-bold">
+              Calculate Initial Withdrawals
+            </button>
+          </div>
+        </div>
+      </Card>
+    </form>
   );
 };
 

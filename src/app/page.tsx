@@ -1,73 +1,88 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import SetupForm from "@/components/SetupForm";
-import UpdateView from "@/components/UpdateView";
-import { LotteryData } from "@/lib/types";
-
-const DATA_KEY = "lottery_data";
+import { useState, useEffect } from 'react';
+import { LotteryData } from '@/lib/types';
+import SetupForm from '@/components/SetupForm';
+import UpdateView from '@/components/UpdateView';
+import MoneyBackground from '@/components/MoneyBackground';
+import Confetti from 'react-confetti';
+import { useWindowSize } from 'react-use';
 
 export default function Home() {
-  const [lotteryData, setLotteryData] = useState<LotteryData | null>(null);
+  const [data, setData] = useState<LotteryData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const { width, height } = useWindowSize();
 
   useEffect(() => {
-    try {
-      const savedData = localStorage.getItem(DATA_KEY);
-      if (savedData) {
-        setLotteryData(JSON.parse(savedData));
-      }
-    } catch (error) {
-      console.error("Failed to load data from localStorage", error);
-      // If parsing fails, treat it as no data
-      localStorage.removeItem(DATA_KEY);
-    } finally {
-      setIsLoading(false);
+    const savedData = localStorage.getItem('lotteryData');
+    if (savedData) {
+      setData(JSON.parse(savedData));
     }
+    setIsLoading(false);
   }, []);
 
-  const handleSetupComplete = (data: LotteryData) => {
-    try {
-      localStorage.setItem(DATA_KEY, JSON.stringify(data));
-      setLotteryData(data);
-    } catch (error) {
-      console.error("Failed to save data to localStorage", error);
-      alert("There was an error saving your data. Please try again.");
-    }
+  const handleSetupComplete = (newData: LotteryData) => {
+    localStorage.setItem('lotteryData', JSON.stringify(newData));
+    setData(newData);
+    setShowConfetti(true);
   };
 
-  const handleUpdate = (data: LotteryData) => {
-    handleSetupComplete(data); // Same logic as setup: save to localStorage and update state
+  const handleUpdate = (updatedData: LotteryData) => {
+    localStorage.setItem('lotteryData', JSON.stringify(updatedData));
+    setData(updatedData);
   };
 
   const handleReset = () => {
-    if (window.confirm("Are you sure you want to delete all data and start over?")) {
-      try {
-        localStorage.removeItem(DATA_KEY);
-        setLotteryData(null);
-      } catch (error) {
-        console.error("Failed to remove data from localStorage", error);
-      }
+    localStorage.removeItem('lotteryData');
+    setData(null);
+    setShowConfetti(false);
+  };
+
+  const renderContent = () => {
+    if (isLoading) {
+      return <div className="loader is-loading"></div>;
+    }
+
+    if (data) {
+      return <UpdateView data={data} onUpdate={handleUpdate} onReset={handleReset} />;
+    } else {
+      return <SetupForm onSetupComplete={handleSetupComplete} />;
     }
   };
-  
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-start p-4 sm:p-8 md:p-12">
-      <div className="z-10 w-full max-w-4xl items-center justify-between font-mono text-sm lg:flex mb-8">
-        <h1 className="text-3xl lg:text-4xl font-bold text-accent text-center w-full">
-          Lottery Winnings Calculator
-        </h1>
-      </div>
 
-      <div className="w-full max-w-2xl">
-        {isLoading ? (
-          <p className="text-center">Loading...</p>
-        ) : lotteryData ? (
-          <UpdateView data={lotteryData} onUpdate={handleUpdate} onReset={handleReset} />
-        ) : (
-          <SetupForm onSetupComplete={handleSetupComplete} />
-        )}
-      </div>
-    </main>
+  return (
+    <>
+      <MoneyBackground />
+      {showConfetti && (
+        <Confetti
+          width={width}
+          height={height}
+          recycle={false}
+          numberOfPieces={500}
+          onConfettiComplete={() => setShowConfetti(false)}
+        />
+      )}
+      <section className="hero is-primary is-bold">
+        <div className="hero-body">
+          <div className="container has-text-centered">
+            <h1 className="title is-1">Lottery Winnings Calculator</h1>
+            <h2 className="subtitle is-3" style={{ color: 'var(--gold-light)' }}>
+              Plan Your Financial Future
+            </h2>
+          </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="container">
+          <div className="columns is-centered">
+            <div className="column is-two-thirds">
+              {renderContent()}
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }
