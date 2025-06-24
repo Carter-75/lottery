@@ -1,33 +1,32 @@
 {
-  "name": "crash-cart",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "lottery-winnings-calculator",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "start": "next start",
-    "lint": "next lint",
+    "dev": "next dev --turbo",
     "build": "next build",
-    "dev": "next dev"
+    "start": "next start",
+    "lint": "next lint"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@types/animejs": "^3.1.9",
-    "@types/matter-js": "^0.19.8",
-    "animejs": "^4.0.2",
-    "bulma": "^1.0.4",
-    "matter-js": "^0.20.0",
-    "next": "^15.3.3",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "bulma": "^1.0.1",
+    "next": "14.2.4",
+    "react": "^18",
+    "react-confetti": "^6.1.0",
+    "react-dom": "^18",
+    "react-use": "^17.5.0"
   },
   "devDependencies": {
-    "@types/node": "^24.0.3",
-    "@types/react": "^18.3.23",
-    "@types/react-dom": "^18.3.7",
-    "eslint": "^9.29.0",
-    "eslint-config-next": "^15.3.3",
-    "typescript": "^5.8.3"
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.4",
+    "postcss": "^8",
+    "typescript": "^5"
   }
 }

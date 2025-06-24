@@ -1,19 +1,7 @@
+@import 'bulma/css/bulma.css';
+
 html,
 body {
-  padding: 0;
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
-    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
-  background-color: #282c34;
-  color: white;
-  overflow: hidden; /* Prevent scrolling to keep canvas in full view */
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-* {
-  box-sizing: border-box;
+  color: var(--bulma-text-strong);
+  background: var(--bulma-scheme-main);
 }
