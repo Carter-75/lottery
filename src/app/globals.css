@@ -1,17 +1,23 @@
 @import 'bulma/css/bulma.css';
 
 :root {
-  --green-light: #76c893;
-  --green-dark: #166534;
-  --gold-light: #fde047; /* yellow-300 */
-  --gold-dark: #f59e0b;  /* amber-500 */
+  /* Professional Red-Orange Theme */
+  --primary-orange: #e85d04;         /* Professional orange-red */
+  --primary-orange-hover: #f77f00;   /* Brighter orange for hover */
+  --primary-red: #d00000;            /* Deep red for active/click */
+  --secondary-orange: #ff9500;       /* Vibrant professional orange */
+  --accent-light: #ff7b54;           /* Professional coral-red */
+  --accent-hover: #ff9f70;           /* Lighter orange-red for hover */
+  
   --background-dark: #1a1a1a;
   --background-light: #2a2a2a;
-  --text-color: #e5e5e5;
-  --text-color-dark: #a3a3a3;
+  --background-card: #2c2c2c;
+  --text-color: #f0f0f0;
+  --text-color-dark: #a0a0a0;
+  --text-color-muted: #808080;
 }
 
-/* Override Bulma's variables */
+/* Override Bulma's variables with Red-Orange Theme */
 :root {
     --bulma-body-background-color: var(--background-dark);
     --bulma-body-color: var(--text-color);
@@ -20,25 +26,25 @@
     --bulma-scheme-main-ter: #333;
     --bulma-scheme-invert: var(--text-color);
     --bulma-text: var(--text-color);
-    --bulma-text-strong: var(--gold-light);
+    --bulma-text-strong: var(--primary-orange);
 
-    --bulma-link: var(--green-light);
-    --bulma-link-hover: var(--gold-light);
+    --bulma-link: var(--accent-light);
+    --bulma-link-hover: var(--accent-hover);
 
-    --bulma-primary: var(--green-dark);
-    --bulma-primary-invert: var(--gold-light);
+    --bulma-primary: var(--primary-orange);
+    --bulma-primary-invert: #ffffff;
 
     --bulma-input-background-color: var(--background-light);
     --bulma-input-color: var(--text-color);
-    --bulma-input-border-color: var(--green-dark);
+    --bulma-input-border-color: rgba(232, 93, 4, 0.3);
     --bulma-input-placeholder-color: var(--text-color-dark);
-    --bulma-input-focus-border-color: var(--green-light);
+    --bulma-input-focus-border-color: var(--primary-orange);
 
-    --bulma-card-background-color: var(--background-light);
-    --bulma-card-header-color: var(--gold-light);
+    --bulma-card-background-color: var(--background-card);
+    --bulma-card-header-color: var(--primary-orange);
     --bulma-card-color: var(--text-color);
 
-    --bulma-box-background-color: var(--background-light);
+    --bulma-box-background-color: var(--background-card);
     --bulma-box-color: var(--text-color);
 
     --bulma-notification-background-color: var(--background-light);
@@ -51,12 +57,13 @@ body {
 }
 
 a {
-  color: var(--green-light);
+  color: var(--accent-light);
   text-decoration: none;
+  transition: color 0.3s ease;
 }
 
 a:hover {
-  color: var(--gold-light);
+  color: var(--accent-hover);
 }
 
 .money-background {
@@ -72,9 +79,10 @@ a:hover {
 .dollar-sign {
     position: absolute;
     font-size: 2rem;
-    color: var(--green-dark);
+    color: var(--primary-orange);
     user-select: none;
     animation: fall linear forwards;
+    opacity: 0.6;
 }
 
 @keyframes fall {
@@ -85,15 +93,201 @@ a:hover {
 }
 
 .notification.is-themed-info {
-    background-color: var(--background-light);
+    background-color: rgba(232, 93, 4, 0.1);
     color: var(--text-color);
-    border-left: 4px solid var(--gold-dark);
+    border-left: 4px solid var(--primary-orange);
+    border-radius: 8px;
 }
 
 .hero.is-primary {
-    background-color: var(--green-dark);
+    background: linear-gradient(135deg, var(--primary-orange), var(--primary-red));
+    background-attachment: fixed;
 }
 .hero.is-primary .title,
 .hero.is-primary .subtitle {
-    color: var(--text-color);
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Enhanced mobile responsiveness */
+@media (max-width: 768px) {
+    .hero .title.is-1 {
+        font-size: 2.5rem !important;
+        line-height: 1.2 !important;
+    }
+    
+    .hero .subtitle.is-3 {
+        font-size: 1.5rem !important;
+        line-height: 1.3 !important;
+    }
+    
+    .column.is-6 {
+        width: 100% !important;
+    }
+    
+    .container {
+        padding: 0 1rem;
+    }
+    
+    .level.is-mobile {
+        display: block !important;
+    }
+    
+    .level-left, .level-right {
+        justify-content: flex-start !important;
+    }
+    
+    .level-item {
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .buttons {
+        flex-direction: column !important;
+    }
+    
+    .button {
+        margin-bottom: 0.5rem !important;
+        width: 100% !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero .title.is-1 {
+        font-size: 2rem !important;
+        padding: 0 0.5rem;
+        line-height: 1.2 !important;
+    }
+    
+    .hero .subtitle.is-3 {
+        font-size: 1.25rem !important;
+        padding: 0 0.5rem;
+        line-height: 1.3 !important;
+    }
+    
+    .box {
+        padding: 1rem !important;
+        margin: 0.75rem 0 !important;
+    }
+    
+    .field {
+        margin-bottom: 1rem !important;
+    }
+    
+    .title.is-2 {
+        font-size: 1.75rem !important;
+    }
+    
+    .title.is-3 {
+        font-size: 1.5rem !important;
+    }
+    
+    .title.is-4 {
+        font-size: 1.25rem !important;
+    }
+    
+    .container {
+        padding: 0 0.5rem;
+    }
+}
+
+/* Enhanced button styling */
+.button.is-primary {
+    background: linear-gradient(45deg, var(--primary-orange), var(--primary-orange-hover));
+    border: none;
+    box-shadow: 0 4px 15px rgba(232, 93, 4, 0.3);
+    transition: all 0.3s ease;
+}
+
+.button.is-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(232, 93, 4, 0.4);
+}
+
+.button.is-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(232, 93, 4, 0.3);
+}
+
+/* Enhanced input styling */
+.input:focus, .input.is-focused {
+    border-color: var(--primary-orange) !important;
+    box-shadow: 0 0 0 0.125em rgba(232, 93, 4, 0.25) !important;
+}
+
+/* Loading spinner enhancement */
+.loader {
+    border: 4px solid rgba(232, 93, 4, 0.1);
+    border-left: 4px solid var(--primary-orange);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 2rem auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Focus and accessibility improvements */
+button:focus, input:focus, select:focus {
+    outline: 3px solid rgba(232, 93, 4, 0.5) !important;
+    outline-offset: 2px !important;
+}
+
+/* Improved contrast for better readability */
+.has-text-weight-bold {
+    font-weight: 700 !important;
+}
+
+/* Better touch targets for mobile */
+@media (max-width: 768px) {
+    .button {
+        min-height: 48px !important;
+        padding: 0.75rem 1rem !important;
+    }
+    
+    .input, .select select {
+        min-height: 44px !important;
+        padding: 0.75rem !important;
+        font-size: 16px !important; /* Prevents zoom on iOS */
+    }
+    
+    .title, .subtitle {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .dollar-sign {
+        animation: none !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    :root {
+        --primary-orange: #ff6b00;
+        --primary-orange-hover: #ff8c00;
+        --text-color: #ffffff;
+        --background-dark: #000000;
+    }
+    
+    .button.is-primary {
+        border: 2px solid var(--primary-orange) !important;
+    }
+    
+    .input {
+        border: 2px solid var(--primary-orange) !important;
+    }
 }

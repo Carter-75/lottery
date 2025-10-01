@@ -54,7 +54,9 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSetupComplete }) => {
 
   const formRow = (label: string, name: keyof UserInputParameters, type: string, helpText?: string, props: Record<string, any> = {}) => (
     <div className="field">
-      <label htmlFor={name} className="label">{label}</label>
+      <label htmlFor={name} className="label" style={{ color: 'var(--text-color)', fontSize: '0.95rem', fontWeight: '600' }}>
+        {label}
+      </label>
       <div className="control">
         <input
           className="input"
@@ -64,28 +66,38 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSetupComplete }) => {
           value={String(formData[name])}
           onChange={handleChange}
           required
+          aria-describedby={helpText ? `${name}-help` : undefined}
+          style={{
+            backgroundColor: 'var(--background-light)',
+            color: 'var(--text-color)',
+            border: '2px solid rgba(232, 93, 4, 0.3)',
+            borderRadius: '8px',
+            fontSize: '1rem',
+            transition: 'border-color 0.3s ease, box-shadow 0.3s ease',
+            minHeight: '44px' // Ensure touch-friendly targets on mobile
+          }}
           {...props}
         />
       </div>
-      {helpText && <p className="help">{helpText}</p>}
+      {helpText && <p id={`${name}-help`} className="help" style={{ color: 'var(--text-color-dark)', fontSize: '0.85rem', marginTop: '0.5rem' }}>{helpText}</p>}
     </div>
   );
 
   return (
     <form onSubmit={handleSubmit}>
       <Card>
-        <h2 className="title is-3 has-text-centered" style={{ color: 'var(--gold-light)' }}>Lottery Setup</h2>
+        <h2 className="title is-3 has-text-centered" style={{ color: 'var(--primary-orange)' }}>Lottery Setup</h2>
         <hr className="my-3"/>
         
         <div className="columns is-multiline">
-            <div className="column is-full">{formRow("Total money won ($)", "total_winnings", "number", undefined, {step: 1000000})}</div>
-            <div className="column is-6">{formRow("Lump sum tax (%)", "lump_sum_tax", "number", "Estimated combined tax on lump sum.")}</div>
-            <div className="column is-6">{formRow("Annual installment tax (%)", "annuity_tax", "number", "Estimated combined tax on annual payments.")}</div>
-            <div className="column is-full">{formRow("Savings account APR (%)", "savings_apr", "number", "The estimated annual return for all investments.", {step: 0.1})}</div>
-            <div className="column is-6">{formRow("Your current age", "age", "number")}</div>
-            <div className="column is-6">{formRow("Your expected age at death", "death_age", "number")}</div>
-            <div className="column is-6">{formRow("Years for annual installments", "years", "number", "The number of years the annuity pays out.")}</div>
-            <div className="column is-6">{formRow("Amount you want left at death ($)", "ml", "number", "Goal amount, in today's dollars, for inheritance.", {step: 100000})}</div>
+            <div className="column is-full">{formRow("Total money won ($)", "total_winnings", "number", "Enter your total lottery winnings amount", {step: 1000000, min: "0", inputMode: "numeric"})}</div>
+            <div className="column is-full-mobile is-6-tablet">{formRow("Lump sum tax (%)", "lump_sum_tax", "number", "Estimated combined tax on lump sum.", {step: "0.1", min: "0", max: "100", inputMode: "decimal"})}</div>
+            <div className="column is-full-mobile is-6-tablet">{formRow("Annual installment tax (%)", "annuity_tax", "number", "Estimated combined tax on annual payments.", {step: "0.1", min: "0", max: "100", inputMode: "decimal"})}</div>
+            <div className="column is-full">{formRow("Savings account APR (%)", "savings_apr", "number", "The estimated annual return for all investments.", {step: 0.1, min: "0", max: "100", inputMode: "decimal"})}</div>
+            <div className="column is-full-mobile is-6-tablet">{formRow("Your current age", "age", "number", "Your age today", {min: "1", max: "120", inputMode: "numeric"})}</div>
+            <div className="column is-full-mobile is-6-tablet">{formRow("Your expected age at death", "death_age", "number", "Life expectancy estimate", {min: "1", max: "120", inputMode: "numeric"})}</div>
+            <div className="column is-full-mobile is-6-tablet">{formRow("Years for annual installments", "years", "number", "The number of years the annuity pays out.", {min: "1", max: "50", inputMode: "numeric"})}</div>
+            <div className="column is-full-mobile is-6-tablet">{formRow("Amount you want left at death ($)", "ml", "number", "Goal amount, in today's dollars, for inheritance.", {step: 100000, min: "0", inputMode: "numeric"})}</div>
         </div>
 
         <div className="notification is-themed-info mt-5">
@@ -97,8 +109,17 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSetupComplete }) => {
 
         <div className="field mt-5">
           <div className="control">
-            <button type="submit" className="button is-primary is-fullwidth is-large is-uppercase has-text-weight-bold">
-              Calculate Initial Withdrawals
+            <button 
+              type="submit" 
+              className="button is-primary is-fullwidth is-large is-uppercase has-text-weight-bold" 
+              style={{ 
+                fontSize: '1.1rem', 
+                padding: '1rem 2rem',
+                minHeight: '56px' // Touch-friendly button size
+              }}
+              aria-label="Calculate lottery financial projections"
+            >
+              🚀 Calculate My Financial Future
             </button>
           </div>
         </div>

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Card from './Card';
 import { LotteryData } from '../lib/types';
 import { calculateUpdate, calculateWithdrawalLimits, formatMoney } from '../lib/lottery-logic';
+import { downloadCSV, shareScenario, copyToClipboard } from '../lib/export-utils';
 
 interface UpdateViewProps {
   data: LotteryData;
@@ -15,6 +16,7 @@ const UpdateView: React.FC<UpdateViewProps> = ({ data, onUpdate, onReset }) => {
   const [spending, setSpending] = useState('0.00');
   const [updateDate, setUpdateDate] = useState(new Date().toISOString().split('T')[0]);
   const [error, setError] = useState<string | null>(null);
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
 
   const withdrawalLimits = calculateWithdrawalLimits(data);
 
@@ -31,6 +33,25 @@ const UpdateView: React.FC<UpdateViewProps> = ({ data, onUpdate, onReset }) => {
       }
     }
   };
+
+  const handleExport = () => {
+    try {
+      downloadCSV(data);
+    } catch (err) {
+      setError('Failed to export data.');
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      const shareUrl = shareScenario(data);
+      await copyToClipboard(shareUrl);
+      setShareMessage('Share URL copied to clipboard!');
+      setTimeout(() => setShareMessage(null), 3000);
+    } catch (err) {
+      setError('Failed to copy share URL.');
+    }
+  };
   
   const SummaryItem: React.FC<{ label: string; value: string | number; }> = ({ label, value }) => (
     <div className="level is-mobile">
@@ -45,7 +66,7 @@ const UpdateView: React.FC<UpdateViewProps> = ({ data, onUpdate, onReset }) => {
 
   const LimitsTable: React.FC<{limits: any, title: string}> = ({limits, title}) => (
     <div className="box">
-        <h4 className="title is-4 has-text-centered" style={{color: 'var(--gold-light)'}}>{title}</h4>
+        <h4 className="title is-4 has-text-centered" style={{color: 'var(--primary-orange)'}}>{title}</h4>
         <hr className="my-2" />
         {Object.entries(limits).map(([freq, value]: [string, any]) => (
             <div key={freq} className="level is-mobile">
@@ -67,7 +88,7 @@ const UpdateView: React.FC<UpdateViewProps> = ({ data, onUpdate, onReset }) => {
         
         <div className="column is-12">
           <Card>
-            <h2 className="title is-2 has-text-centered" style={{color: 'var(--gold-light)'}}>Account Summary</h2>
+            <h2 className="title is-2 has-text-centered" style={{color: 'var(--primary-orange)'}}>Account Summary</h2>
             <hr/>
             <SummaryItem label="Lump Sum Balance" value={data.state.lump_balance} />
             <SummaryItem label="Annual Installments Balance" value={data.state.annual_balance} />
@@ -84,7 +105,7 @@ const UpdateView: React.FC<UpdateViewProps> = ({ data, onUpdate, onReset }) => {
 
         <div className="column is-12">
           <Card>
-            <h2 className="title is-2 has-text-centered" style={{color: 'var(--gold-light)'}}>Update Information</h2>
+            <h2 className="title is-2 has-text-centered" style={{color: 'var(--primary-orange)'}}>Update Information</h2>
             <form onSubmit={handleUpdate}>
               <div className="field">
                 <label htmlFor="updateDate" className="label">Today's date:</label>
@@ -96,6 +117,8 @@ const UpdateView: React.FC<UpdateViewProps> = ({ data, onUpdate, onReset }) => {
                     onChange={e => setUpdateDate(e.target.value)}
                     required
                     className="input"
+                    style={{ minHeight: '44px' }}
+                    aria-label="Select today's date for the update"
                   />
                 </div>
               </div>
@@ -106,18 +129,28 @@ const UpdateView: React.FC<UpdateViewProps> = ({ data, onUpdate, onReset }) => {
                     type="number"
                     id="spending"
                     step="0.01"
+                    min="0"
                     value={spending}
                     onChange={e => setSpending(e.target.value)}
                     required
                     className="input"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    style={{ minHeight: '44px' }}
+                    aria-label="Enter the amount spent since the last update"
                   />
                 </div>
               </div>
               {error && <div className="notification is-danger is-light">{error}</div>}
               <div className="field">
                 <div className="control">
-                    <button type="submit" className="button is-primary is-fullwidth is-large">
-                        Update & Recalculate
+                    <button 
+                      type="submit" 
+                      className="button is-primary is-fullwidth is-large"
+                      style={{ minHeight: '56px' }}
+                      aria-label="Update balances and recalculate projections"
+                    >
+                        📈 Update & Recalculate
                     </button>
                 </div>
               </div>
@@ -128,10 +161,10 @@ const UpdateView: React.FC<UpdateViewProps> = ({ data, onUpdate, onReset }) => {
         {withdrawalLimits ? (
           <div className="column is-12">
             <Card>
-                <h2 className="title is-2 has-text-centered" style={{color: 'var(--gold-light)'}}>Sustainable Withdrawal Limits</h2>
-                <div className="columns is-desktop">
-                    <div className="column"><LimitsTable limits={withdrawalLimits.lump} title="Lump Sum" /></div>
-                    <div className="column"><LimitsTable limits={withdrawalLimits.annual} title="Annual Installments" /></div>
+                <h2 className="title is-2 has-text-centered" style={{color: 'var(--primary-orange)'}}>Sustainable Withdrawal Limits</h2>
+                <div className="columns is-multiline">
+                    <div className="column is-full-mobile is-6-tablet"><LimitsTable limits={withdrawalLimits.lump} title="Lump Sum" /></div>
+                    <div className="column is-full-mobile is-6-tablet"><LimitsTable limits={withdrawalLimits.annual} title="Annual Installments" /></div>
                 </div>
                 <p className="has-text-centered" style={{color: 'var(--text-color-dark)'}}>
                     Time remaining: {withdrawalLimits.years_remaining.toFixed(1)} years
@@ -146,12 +179,45 @@ const UpdateView: React.FC<UpdateViewProps> = ({ data, onUpdate, onReset }) => {
           </div>
         )}
 
+        <div className="column is-12">
+          <Card>
+            <h3 className="title is-4 has-text-centered" style={{color: 'var(--primary-orange)'}}>Export & Share</h3>
+            <div className="buttons is-centered">
+              <button
+                onClick={handleExport}
+                className="button is-primary is-outlined"
+                title="Export data to CSV file"
+                style={{ minHeight: '48px', margin: '0.25rem' }}
+                aria-label="Export lottery data to CSV file"
+              >
+                📊 Export CSV
+              </button>
+              <button
+                onClick={handleShare}
+                className="button is-primary is-outlined" 
+                title="Copy shareable URL to clipboard"
+                style={{ minHeight: '48px', margin: '0.25rem' }}
+                aria-label="Copy shareable URL to clipboard"
+              >
+                🔗 Share Scenario
+              </button>
+            </div>
+            {shareMessage && (
+              <div className="notification is-success is-light has-text-centered">
+                {shareMessage}
+              </div>
+            )}
+          </Card>
+        </div>
+
         <div className="column is-12 has-text-centered mt-5">
             <button
             onClick={() => { if (window.confirm("Are you sure you want to delete all data and start over?")) onReset() }}
             className="button is-danger is-outlined"
+            style={{ minHeight: '48px' }}
+            aria-label="Delete all data and start over with new lottery calculation"
             >
-            Start Over (Delete All Data)
+            🔄 Start Over (Delete All Data)
             </button>
         </div>
       </div>

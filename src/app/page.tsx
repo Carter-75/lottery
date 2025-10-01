@@ -67,8 +67,8 @@ export default function Home() {
         <div className="hero-body">
           <div className="container has-text-centered">
             <h1 className="title is-1">Lottery Winnings Calculator</h1>
-            <h2 className="subtitle is-3" style={{ color: 'var(--gold-light)' }}>
-              Plan Your Financial Future
+            <h2 className="subtitle is-3" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
+              Plan Your Financial Future 💰
             </h2>
           </div>
         </div>
