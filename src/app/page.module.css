@@ -1,5 +1,48 @@
+/* ========================================
+   LAYOUT STYLES
+   ======================================== */
 .main {
   position: relative;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Professional Container Improvements */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding: 0 2rem;
+  }
+}
+
+/* Section Spacing */
+.section {
+  padding: 3rem 0;
+}
+
+@media (min-width: 768px) {
+  .section {
+    padding: 4rem 0;
+  }
+}
+
+/* Column Improvements */
+.columns.is-centered {
+  justify-content: center;
+}
+
+.column {
+  padding: 1rem;
+}
+
+@media (max-width: 768px) {
+  .column {
+    padding: 0.75rem;
+  }
 }
