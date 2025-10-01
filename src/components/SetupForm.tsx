@@ -322,8 +322,9 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSetupComplete }) => {
             <div className="control">
               <button 
                 type="submit" 
-                className="button is-primary is-large"
+                className="button is-primary is-large button-long-text"
                 disabled={isSubmitting || Object.values(errors).some(err => err)}
+                title="Calculate My Financial Plan"
               >
                 {isSubmitting ? (
                   <>
@@ -331,7 +332,7 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSetupComplete }) => {
                     <span className="ml-2">Calculating...</span>
                   </>
                 ) : (
-                  '🚀 Calculate My Financial Plan'
+                  <span className="button-text-responsive">🚀 Calculate My Financial Plan</span>
                 )}
               </button>
             </div>

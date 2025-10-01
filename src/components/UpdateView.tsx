@@ -146,8 +146,9 @@ const UpdateView: React.FC<UpdateViewProps> = ({ data, onUpdate, onReset }) => {
                     <button 
                       className="button is-outlined"
                       onClick={() => setShowExportMenu(!showExportMenu)}
+                      title="Export Data"
                     >
-                      <span>📥 Export Data</span>
+                      <span className="button-text-responsive">📥 Export Data</span>
                       <span className="icon is-small">
                         <span>▼</span>
                       </span>
@@ -158,14 +159,16 @@ const UpdateView: React.FC<UpdateViewProps> = ({ data, onUpdate, onReset }) => {
                       <button 
                         className="dropdown-item button is-ghost"
                         onClick={() => handleExport('csv')}
+                        title="Download CSV"
                       >
-                        📄 Download CSV
+                        <span className="button-text-responsive">📄 Download CSV</span>
                       </button>
                       <button 
                         className="dropdown-item button is-ghost"
                         onClick={() => handleExport('json')}
+                        title="Download JSON"
                       >
-                        📋 Download JSON
+                        <span className="button-text-responsive">📋 Download JSON</span>
                       </button>
                     </div>
                   </div>
@@ -324,8 +327,9 @@ const UpdateView: React.FC<UpdateViewProps> = ({ data, onUpdate, onReset }) => {
                 <div className="control">
                   <button 
                     type="submit" 
-                    className="button is-primary is-fullwidth is-large"
+                    className="button is-primary is-fullwidth is-large button-long-text"
                     disabled={isUpdating}
+                    title="Update & Recalculate"
                   >
                     {isUpdating ? (
                       <>
@@ -333,7 +337,7 @@ const UpdateView: React.FC<UpdateViewProps> = ({ data, onUpdate, onReset }) => {
                         <span className="ml-2">Updating...</span>
                       </>
                     ) : (
-                      '🔄 Update & Recalculate'
+                      <span className="button-text-responsive">🔄 Update & Recalculate</span>
                     )}
                   </button>
                 </div>
@@ -406,10 +410,11 @@ const UpdateView: React.FC<UpdateViewProps> = ({ data, onUpdate, onReset }) => {
                 if (window.confirm("⚠️ This will permanently delete all your data and start over. Are you absolutely sure?")) 
                   onReset() 
               }}
-              className="button is-danger is-outlined"
+              className="button is-danger is-outlined button-extra-long"
               disabled={isUpdating}
+              title="Start Over (Delete All Data)"
             >
-              🗑️ Start Over (Delete All Data)
+              <span className="button-text-responsive">🗑️ Start Over (Delete All Data)</span>
             </button>
           </div>
         </div>

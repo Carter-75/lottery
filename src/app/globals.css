@@ -331,6 +331,21 @@ a:focus {
   border: none;
   position: relative;
   overflow: hidden;
+  
+  /* Prevent text overflow */
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  max-width: 100%;
+  
+  /* Ensure proper text display */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  
+  /* Responsive padding */
+  padding: 0.75rem 1.5rem;
 }
 
 .button.is-primary {
@@ -566,6 +581,8 @@ a:focus {
   border: 1px solid var(--bg-quaternary);
   box-shadow: var(--shadow-xl);
   margin-top: 0.5rem;
+  min-width: 12rem;
+  max-width: 20rem;
 }
 
 .dropdown-content {
@@ -581,11 +598,28 @@ a:focus {
   background: transparent;
   color: var(--text-primary);
   border-radius: var(--radius-md);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dropdown-item.button:hover {
   background: var(--bg-tertiary);
   color: var(--primary-400);
+}
+
+/* Dropdown responsive improvements */
+@media (max-width: 768px) {
+  .dropdown-menu {
+    min-width: 10rem;
+    max-width: calc(100vw - 2rem);
+  }
+  
+  .dropdown-item.button {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+  }
 }
 
 /* Dividers */
@@ -606,6 +640,86 @@ a:focus {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* Button Size Variations */
+.button.is-large {
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+}
+
+.button.is-medium {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+.button.is-small {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+/* Button Width Controls */
+.button.is-fullwidth {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Button Text Handling */
+.button-text-responsive {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Utility class for buttons with icons and text */
+.button-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+.button-with-icon .icon {
+  flex-shrink: 0;
+}
+
+.button-with-icon .text {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Mobile Button Optimizations */
+@media (max-width: 768px) {
+  .button {
+    padding: 0.625rem 1rem;
+    font-size: 0.9rem;
+    min-height: 2.5rem;
+  }
+  
+  .button.is-large {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+  
+  .button.is-fullwidth {
+    width: 100%;
+    text-align: center;
+  }
+  
+  /* Handle long button texts on mobile */
+  .button-long-text {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+    line-height: 1.2;
+    white-space: normal;
+    height: auto;
+    min-height: 2.5rem;
+  }
 }
 
 /* Responsive Design Helpers */
@@ -643,6 +757,40 @@ a:focus {
   .card-content {
     padding: 1rem !important;
   }
+  
+  /* Extra small screen button handling */
+  .button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    min-height: 2.25rem;
+  }
+  
+  .button.is-large {
+    padding: 0.625rem 1rem;
+    font-size: 0.9rem;
+    min-height: 2.5rem;
+  }
+  
+  /* Force wrap for very long button text on extra small screens */
+  .button-extra-long {
+    white-space: normal;
+    text-align: center;
+    line-height: 1.1;
+    height: auto;
+    min-height: 3rem;
+    padding: 0.75rem 0.5rem;
+  }
+  
+  /* Dropdown buttons responsive handling */
+  .dropdown .button {
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  .dropdown-item {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+  }
 }
 
 /* Accessibility Improvements */
@@ -678,6 +826,35 @@ a:focus {
 .select select:focus-visible {
   outline: 2px solid var(--primary-500);
   outline-offset: 2px;
+}
+
+/* Extra narrow screens handling */
+@media (max-width: 360px) {
+  .button {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.6rem;
+    min-height: 2rem;
+  }
+  
+  .button.is-large {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.8rem;
+    min-height: 2.25rem;
+  }
+  
+  .button-extra-long {
+    font-size: 0.7rem;
+    line-height: 1.1;
+    padding: 0.6rem 0.4rem;
+    min-height: 2.75rem;
+  }
+  
+  /* Force all button text to be centered and wrap properly on tiny screens */
+  .button span {
+    text-align: center;
+    word-break: break-word;
+    hyphens: auto;
+  }
 }
 
 /* High Contrast Support */
