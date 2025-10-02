@@ -892,3 +892,204 @@ a:focus {
     color: black !important;
   }
 }
+
+/* ========================================
+   IFRAME EMBEDDING STYLES
+   ======================================== */
+
+/* Base iframe mode styles */
+.iframe-mode {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+.iframe-mode body {
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 100vh;
+  height: 100%;
+}
+
+/* Portfolio site specific iframe styles */
+.portfolio-iframe-mode {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  height: 100%;
+  overflow-x: hidden;
+  
+  /* Clean borders for portfolio display */
+  border: none;
+  border-radius: 12px;
+  
+  /* Shadow effects for portfolio showcase */
+  box-shadow: 0 20px 40px -12px rgba(239, 68, 68, 0.15);
+}
+
+/* Hide certain elements when in iframe mode */
+.iframe-mode .footer,
+.iframe-mode .external-links,
+.iframe-mode .download-buttons {
+  display: none !important;
+}
+
+/* Compact hero section for iframe */
+.iframe-mode .hero {
+  padding: 1.5rem 0 !important;
+}
+
+.iframe-mode .hero-body {
+  padding: 1.5rem !important;
+}
+
+.iframe-mode .hero .title {
+  font-size: clamp(1.75rem, 4vw, 2.25rem) !important;
+  margin-bottom: 1rem !important;
+}
+
+.iframe-mode .hero .subtitle {
+  font-size: clamp(1rem, 2.5vw, 1.25rem) !important;
+  margin-bottom: 1rem !important;
+}
+
+.iframe-mode .hero p {
+  font-size: clamp(0.875rem, 2vw, 1rem) !important;
+}
+
+/* Compact sections in iframe */
+.iframe-mode .section {
+  padding: 1.5rem 0 !important;
+}
+
+.iframe-mode .container {
+  padding: 0 1rem !important;
+}
+
+/* Adjust cards for iframe display */
+.iframe-mode .card {
+  margin-bottom: 1rem !important;
+}
+
+.iframe-mode .card-content {
+  padding: 1rem !important;
+}
+
+/* Compact buttons in iframe */
+.iframe-mode .button {
+  font-size: 0.875rem !important;
+  padding: 0.5rem 1rem !important;
+}
+
+.iframe-mode .button.is-large {
+  font-size: 1rem !important;
+  padding: 0.75rem 1.25rem !important;
+}
+
+/* Responsive iframe adjustments */
+@media (max-width: 768px) {
+  .iframe-mode {
+    font-size: 14px;
+  }
+  
+  .iframe-mode .hero {
+    padding: 1rem 0 !important;
+  }
+  
+  .iframe-mode .hero-body {
+    padding: 1rem !important;
+  }
+  
+  .iframe-mode .section {
+    padding: 1rem 0 !important;
+  }
+  
+  .iframe-mode .container {
+    padding: 0 0.5rem !important;
+  }
+  
+  .iframe-mode .card-content {
+    padding: 0.75rem !important;
+  }
+  
+  .iframe-mode .columns {
+    margin: 0 !important;
+  }
+  
+  .iframe-mode .column {
+    padding: 0.5rem !important;
+  }
+  
+  .iframe-mode .button {
+    font-size: 0.75rem !important;
+    padding: 0.4rem 0.8rem !important;
+    min-height: 2rem;
+  }
+}
+
+/* Medium screen iframe adjustments */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .iframe-mode .hero .title {
+    font-size: 2rem !important;
+  }
+  
+  .iframe-mode .hero .subtitle {
+    font-size: 1.125rem !important;
+  }
+}
+
+/* Large screen iframe adjustments */
+@media (min-width: 1025px) {
+  .iframe-mode .container {
+    max-width: none !important;
+    padding: 0 1.5rem !important;
+  }
+}
+
+/* Theme adjustments for iframe */
+.iframe-mode.theme-dark {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #151515;
+}
+
+.iframe-mode.theme-light {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --text-primary: #000000;
+  --text-secondary: #333333;
+}
+
+.iframe-mode.theme-light body {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  color: #000000;
+}
+
+/* Portfolio embed specific adjustments */
+.portfolio-iframe-mode .hero .title {
+  background: linear-gradient(135deg, var(--primary-500), var(--accent-500));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.portfolio-iframe-mode .money-background {
+  opacity: 0.3 !important;
+}
+
+/* Focus management in iframe */
+.iframe-mode :focus-visible {
+  outline: 2px solid var(--primary-500);
+  outline-offset: 1px;
+}
+
+/* Loading states in iframe */
+.iframe-mode .spinner-border {
+  border-top-color: var(--primary-500);
+}
+
+/* Confetti adjustments for iframe */
+.iframe-mode canvas {
+  pointer-events: none !important;
+}

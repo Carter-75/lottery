@@ -1,5 +1,7 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
+import { IframeProvider } from "@/lib/iframe-context";
+import { IframeWrapper } from "@/components/IframeWrapper";
 
 export const metadata: Metadata = {
   title: {
@@ -89,10 +91,14 @@ export default function RootLayout({
         <meta name="msapplication-config" content="/browserconfig.xml" />
       </head>
       <body className="antialiased">
-        <div id="root">
-          {children}
-        </div>
-        <div id="modal-root"></div>
+        <IframeProvider>
+          <IframeWrapper>
+            <div id="root">
+              {children}
+            </div>
+            <div id="modal-root"></div>
+          </IframeWrapper>
+        </IframeProvider>
       </body>
     </html>
   );

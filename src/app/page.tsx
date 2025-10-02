@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { LotteryData } from '@/lib/types';
+import { useIframe } from '@/lib/iframe-context';
 import SetupForm from '@/components/SetupForm';
 import UpdateView from '@/components/UpdateView';
 import MoneyBackground from '@/components/MoneyBackground';
@@ -16,6 +17,7 @@ export default function Home() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { width, height } = useWindowSize();
+  const { isIframe, isPortfolioEmbed } = useIframe();
 
   // Enhanced data persistence with error handling
   const saveToLocalStorage = useCallback((data: LotteryData) => {
@@ -136,15 +138,17 @@ export default function Home() {
                     <h2 className="subtitle is-3 mb-5" style={{ color: 'var(--accent-200)' }}>
                       Make Informed Financial Decisions
                     </h2>
-                    <p className="is-size-5 has-text-weight-light" style={{ 
-                      color: 'var(--text-primary)', 
-                      opacity: 0.9,
-                      maxWidth: '600px',
-                      margin: '0 auto'
-                    }}>
-                      Compare lump sum vs annuity payments, calculate sustainable withdrawal rates, 
-                      and plan your financial future with our professional-grade analysis tools.
-                    </p>
+                    {!isPortfolioEmbed && (
+                      <p className="is-size-5 has-text-weight-light" style={{ 
+                        color: 'var(--text-primary)', 
+                        opacity: 0.9,
+                        maxWidth: '600px',
+                        margin: '0 auto'
+                      }}>
+                        Compare lump sum vs annuity payments, calculate sustainable withdrawal rates, 
+                        and plan your financial future with our professional-grade analysis tools.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -163,25 +167,27 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="section has-background-dark" style={{ 
-          marginTop: 'auto',
-          background: 'var(--bg-secondary)',
-          borderTop: '1px solid var(--bg-quaternary)'
-        }}>
-          <div className="container">
-            <div className="content has-text-centered">
-              <p style={{ color: 'var(--text-tertiary)', fontSize: '0.9rem' }}>
-                Professional financial planning tools for lottery winners.
-                <br />
-                <small>
-                  This calculator provides estimates for informational purposes only. 
-                  Please consult with a qualified financial advisor for personalized advice.
-                </small>
-              </p>
+        {/* Footer - Hidden in iframe mode */}
+        {!isIframe && (
+          <footer className="section has-background-dark" style={{ 
+            marginTop: 'auto',
+            background: 'var(--bg-secondary)',
+            borderTop: '1px solid var(--bg-quaternary)'
+          }}>
+            <div className="container">
+              <div className="content has-text-centered">
+                <p style={{ color: 'var(--text-tertiary)', fontSize: '0.9rem' }}>
+                  Professional financial planning tools for lottery winners.
+                  <br />
+                  <small>
+                    This calculator provides estimates for informational purposes only. 
+                    Please consult with a qualified financial advisor for personalized advice.
+                  </small>
+                </p>
+              </div>
             </div>
-          </div>
-        </footer>
+          </footer>
+        )}
       </main>
     </ErrorBoundary>
   );
