@@ -1,6 +1,6 @@
 {
   "name": "lottery-winnings-calculator",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbo",
@@ -8,10 +8,17 @@
     "start": "next start",
     "lint": "next lint"
   },
-  "keywords": [],
+  "keywords": [
+    "lottery",
+    "financial-planning",
+    "calculator",
+    "investment",
+    "retirement-planning",
+    "wealth-management"
+  ],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "A modern, accessible web application for planning and managing lottery winnings. Compare lump sum vs. annuity options, track spending, and calculate sustainable withdrawals.",
   "dependencies": {
     "bulma": "^1.0.1",
     "next": "14.2.4",
