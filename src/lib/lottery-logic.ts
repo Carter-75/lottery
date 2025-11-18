@@ -3,6 +3,14 @@ import { LotteryData, State, InitialParameters, UserInputParameters } from './ty
 export function calculateInitialLotteryData(inputs: UserInputParameters): LotteryData {
   const { total_winnings, lump_sum_tax, annuity_tax, years } = inputs;
 
+  // Validate inputs to prevent calculation errors
+  if (total_winnings <= 0 || years <= 0) {
+    throw new Error('Invalid input: winnings and years must be positive');
+  }
+  if (lump_sum_tax < 0 || lump_sum_tax > 100 || annuity_tax < 0 || annuity_tax > 100) {
+    throw new Error('Invalid input: tax rates must be between 0 and 100');
+  }
+
   // 1. Calculate the net lump sum
   const lump_sum_net = total_winnings * (1 - lump_sum_tax / 100);
 
@@ -14,6 +22,11 @@ export function calculateInitialLotteryData(inputs: UserInputParameters): Lotter
       base_annuity_payment = gross_annuity_value * (annuity_growth_rate - 1) / (Math.pow(annuity_growth_rate, years) - 1);
   } else {
       base_annuity_payment = gross_annuity_value / years;
+  }
+  
+  // Validate calculated values
+  if (!isFinite(base_annuity_payment) || !isFinite(lump_sum_net)) {
+    throw new Error('Calculation error: invalid financial values');
   }
   
   const currentDate = new Date();
@@ -49,7 +62,10 @@ export function calculateUpdate(
         throw new Error("Current date cannot be before the last update date");
     }
 
-    const days_passed = Math.round((current_date.getTime() - last_update_date.getTime()) / (1000 * 3600 * 24));
+    // Calculate days using UTC to avoid timezone issues
+    const days_passed = Math.round((Date.UTC(current_date.getFullYear(), current_date.getMonth(), current_date.getDate()) - 
+                                     Date.UTC(last_update_date.getFullYear(), last_update_date.getMonth(), last_update_date.getDate())) / 
+                                     (1000 * 60 * 60 * 24));
     const investment_apr = initial_parameters.user_inputs.savings_apr;
     const tax_rate = initial_parameters.investment_tax_rate / 100;
 
@@ -78,16 +94,25 @@ export function calculateUpdate(
           continue;
       }
       
-      // Simple check for anniversary passing
-      const anniversary_this_year = new Date(new Date(state.last_update_date).setFullYear(year));
+      // Check if anniversary has passed
+      const lastUpdateDateObj = new Date(state.last_update_date);
+      const anniversary_this_year = new Date(lastUpdateDateObj);
+      anniversary_this_year.setFullYear(year);
+      
       if (anniversary_this_year > last_update_date && anniversary_this_year <= current_date) {
           const new_payment = initial_parameters.base_annuity_payment * Math.pow(initial_parameters.annuity_growth_rate, years_since_start);
           new_annual_balance += new_payment;
       }
     }
     
-    new_lump_balance -= spending;
-    new_annual_balance -= spending;
+    // Deduct spending proportionally from both accounts based on their balances
+    const total_balance = new_lump_balance + new_annual_balance;
+    if (total_balance > 0) {
+        const lump_ratio = new_lump_balance / total_balance;
+        const annual_ratio = new_annual_balance / total_balance;
+        new_lump_balance -= spending * lump_ratio;
+        new_annual_balance -= spending * annual_ratio;
+    }
     
     const total_days_passed = state.years_passed * 365.25 + days_passed;
 
@@ -104,6 +129,7 @@ export function calculateUpdate(
 
 function calculateSustainableDailyWithdrawal(principal: number, target: number, daily_rate: number, num_days: number, tax_rate: number): number {
     if (num_days <= 0 || principal <= 0) return 0;
+    if (!isFinite(principal) || !isFinite(target) || !isFinite(daily_rate)) return 0;
     
     const r = daily_rate;
     const n = num_days;
@@ -174,9 +200,14 @@ export function calculateWithdrawalLimits(data: LotteryData) {
         const g = daily_inflation_rate;
         let daily_real = daily_nominal;
 
-        if (g > 1e-9) {
-            const pv_factor = (1 - Math.pow(1 + g, -n)) / g;
-            daily_real = (daily_nominal / n) * pv_factor;
+        if (Math.abs(g) > 1e-9) {
+            // Calculate present value of constant payment stream adjusted for inflation
+            const discount_factor = 1 / (1 + g);
+            const pv_factor = (1 - Math.pow(discount_factor, n)) / g;
+            daily_real = daily_nominal * discount_factor;
+        } else {
+            // If inflation is near zero, real equals nominal
+            daily_real = daily_nominal;
         }
 
         return {

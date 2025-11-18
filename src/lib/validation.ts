@@ -24,16 +24,16 @@ export function validateUserInputs(inputs: UserInputParameters): ValidationResul
   const errors: ValidationError[] = [];
 
   // Total winnings validation
-  if (inputs.total_winnings <= 0) {
+  if (!isFinite(inputs.total_winnings) || inputs.total_winnings <= 0) {
     errors.push({
       field: 'total_winnings',
-      message: 'Total winnings must be greater than $0'
+      message: 'Total winnings must be a valid positive number'
     });
   }
   if (inputs.total_winnings > 10000000000) {
     errors.push({
       field: 'total_winnings',
-      message: 'Total winnings exceeds maximum allowed value'
+      message: 'Total winnings exceeds maximum allowed value ($10 billion)'
     });
   }
 
@@ -100,10 +100,10 @@ export function validateUserInputs(inputs: UserInputParameters): ValidationResul
       message: 'Legacy amount cannot be negative'
     });
   }
-  if (inputs.ml > inputs.total_winnings * 10) {
+  if (inputs.ml > inputs.total_winnings * 2) {
     errors.push({
       field: 'ml',
-      message: 'Legacy amount seems unrealistically high compared to winnings'
+      message: 'Legacy amount cannot exceed twice your winnings'
     });
   }
 

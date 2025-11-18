@@ -50,9 +50,30 @@ export function loadLotteryData(): LotteryData | null {
       console.warn('Storage version mismatch, data may need migration');
     }
 
+    // Validate data structure thoroughly
+    if (!parsed.data || 
+        !parsed.data.initial_parameters || 
+        !parsed.data.state ||
+        !parsed.data.initial_parameters.user_inputs ||
+        typeof parsed.data.state.lump_balance !== 'number' ||
+        typeof parsed.data.state.annual_balance !== 'number') {
+      console.error('Invalid data structure in storage');
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+
+    // Validate numeric values are finite
+    const state = parsed.data.state;
+    if (!isFinite(state.lump_balance) || !isFinite(state.annual_balance) || !isFinite(state.years_passed)) {
+      console.error('Invalid numeric values in storage');
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+
     return parsed.data;
   } catch (error) {
     console.error('Failed to load lottery data:', error);
+    localStorage.removeItem(STORAGE_KEY);
     return null;
   }
 }
@@ -103,6 +124,18 @@ export function exportLotteryData(data: LotteryData, filename?: string): void {
  */
 export function importLotteryData(file: File): Promise<LotteryData> {
   return new Promise((resolve, reject) => {
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      reject(new Error('File too large. Maximum size is 10MB.'));
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.includes('json') && !file.name.endsWith('.json')) {
+      reject(new Error('Invalid file type. Please select a JSON file.'));
+      return;
+    }
+
     const reader = new FileReader();
     
     reader.onload = (e) => {
@@ -110,13 +143,36 @@ export function importLotteryData(file: File): Promise<LotteryData> {
         const content = e.target?.result as string;
         const parsed: StoredData = JSON.parse(content);
         
-        if (!parsed.data || !parsed.data.initial_parameters || !parsed.data.state) {
-          throw new Error('Invalid data format');
+        // Thorough validation
+        if (!parsed.data || 
+            !parsed.data.initial_parameters || 
+            !parsed.data.state ||
+            !parsed.data.initial_parameters.user_inputs) {
+          throw new Error('Invalid data structure');
+        }
+
+        // Validate all required fields exist and are valid numbers
+        const { state, initial_parameters } = parsed.data;
+        if (!isFinite(state.lump_balance) || 
+            !isFinite(state.annual_balance) || 
+            !isFinite(state.years_passed) ||
+            !isFinite(initial_parameters.lump_sum_net) ||
+            !isFinite(initial_parameters.base_annuity_payment)) {
+          throw new Error('Invalid numeric values in data');
+        }
+
+        // Validate date format
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(state.last_update_date)) {
+          throw new Error('Invalid date format');
         }
         
         resolve(parsed.data);
       } catch (error) {
-        reject(new Error('Failed to parse import file. Please ensure it is a valid lottery data export.'));
+        if (error instanceof Error) {
+          reject(new Error(`Failed to parse import file: ${error.message}`));
+        } else {
+          reject(new Error('Failed to parse import file. Please ensure it is a valid lottery data export.'));
+        }
       }
     };
     

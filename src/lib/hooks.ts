@@ -55,16 +55,12 @@ export function useKeyboardShortcuts(shortcuts: KeyboardShortcut[], enabled: boo
  * @returns Boolean indicating if reduced motion is preferred
  */
 export function usePrefersReducedMotion(): boolean {
-  const query = '(prefers-reduced-motion: reduce)';
-  
-  useEffect(() => {
-    const mediaQuery = window.matchMedia(query);
-    return () => mediaQuery.removeEventListener('change', () => {});
-  }, []);
-
   if (typeof window === 'undefined') return false;
   
-  return window.matchMedia(query).matches;
+  const query = '(prefers-reduced-motion: reduce)';
+  const mediaQuery = window.matchMedia(query);
+  
+  return mediaQuery.matches;
 }
 
 /**
