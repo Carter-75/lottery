@@ -1,0 +1,24 @@
+src/lib/export-utils.ts(13,67): error TS2339: Property 'total_winnings' does not exist on type 'UserInputParameters'.
+src/lib/export-utils.ts(14,61): error TS2339: Property 'lump_sum_tax' does not exist on type 'UserInputParameters'.
+src/lib/export-utils.ts(15,60): error TS2339: Property 'annuity_tax' does not exist on type 'UserInputParameters'.
+src/lib/export-utils.ts(19,54): error TS2339: Property 'years' does not exist on type 'UserInputParameters'.
+src/lib/export-utils.ts(21,63): error TS2339: Property 'investment_tax_rate' does not exist on type 'UserInputParameters'.
+src/lib/lottery-logic.ts(113,91): error TS2339: Property 'years' does not exist on type 'UserInputParameters'.
+src/lib/validation.ts(27,24): error TS2339: Property 'total_winnings' does not exist on type 'UserInputParameters'.
+src/lib/validation.ts(27,50): error TS2339: Property 'total_winnings' does not exist on type 'UserInputParameters'.
+src/lib/validation.ts(29,7): error TS2322: Type '"total_winnings"' is not assignable to type 'keyof UserInputParameters'.
+src/lib/validation.ts(33,14): error TS2339: Property 'total_winnings' does not exist on type 'UserInputParameters'.
+src/lib/validation.ts(35,7): error TS2322: Type '"total_winnings"' is not assignable to type 'keyof UserInputParameters'.
+src/lib/validation.ts(41,14): error TS2339: Property 'lump_sum_tax' does not exist on type 'UserInputParameters'.
+src/lib/validation.ts(41,41): error TS2339: Property 'lump_sum_tax' does not exist on type 'UserInputParameters'.
+src/lib/validation.ts(43,7): error TS2322: Type '"lump_sum_tax"' is not assignable to type 'keyof UserInputParameters'.
+src/lib/validation.ts(47,14): error TS2339: Property 'annuity_tax' does not exist on type 'UserInputParameters'.
+src/lib/validation.ts(47,40): error TS2339: Property 'annuity_tax' does not exist on type 'UserInputParameters'.
+src/lib/validation.ts(49,7): error TS2322: Type '"annuity_tax"' is not assignable to type 'keyof UserInputParameters'.
+src/lib/validation.ts(53,14): error TS2339: Property 'investment_tax_rate' does not exist on type 'UserInputParameters'.
+src/lib/validation.ts(53,48): error TS2339: Property 'investment_tax_rate' does not exist on type 'UserInputParameters'.
+src/lib/validation.ts(55,7): error TS2322: Type '"investment_tax_rate"' is not assignable to type 'keyof UserInputParameters'.
+src/lib/validation.ts(89,14): error TS2339: Property 'years' does not exist on type 'UserInputParameters'.
+src/lib/validation.ts(89,34): error TS2339: Property 'years' does not exist on type 'UserInputParameters'.
+src/lib/validation.ts(91,7): error TS2322: Type '"years"' is not assignable to type 'keyof UserInputParameters'.
+src/lib/validation.ts(103,26): error TS2339: Property 'total_winnings' does not exist on type 'UserInputParameters'.

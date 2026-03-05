@@ -23,37 +23,39 @@ export interface ValidationResult {
 export function validateUserInputs(inputs: UserInputParameters): ValidationResult {
   const errors: ValidationError[] = [];
 
-  // Total winnings validation
-  if (!isFinite(inputs.total_winnings) || inputs.total_winnings <= 0) {
+  // Cash value validation
+  if (inputs.entry_mode === 'cash_value' && (!isFinite(inputs.cash_value) || inputs.cash_value < 0)) {
     errors.push({
-      field: 'total_winnings',
-      message: 'Total winnings must be a valid positive number'
+      field: 'cash_value',
+      message: 'Cash value must be a valid positive number'
     });
   }
-  if (inputs.total_winnings > 10000000000) {
+
+  // Jackpot value validation
+  if (inputs.entry_mode === 'annuity' && (!isFinite(inputs.jackpot_annuity) || inputs.jackpot_annuity < 0)) {
     errors.push({
-      field: 'total_winnings',
-      message: 'Total winnings exceeds maximum allowed value ($10 billion)'
+      field: 'jackpot_annuity',
+      message: 'Jackpot value must be a valid positive number'
     });
   }
 
   // Tax rate validations
-  if (inputs.lump_sum_tax < 0 || inputs.lump_sum_tax > 100) {
+  if (inputs.federal_tax_winnings < 0 || inputs.federal_tax_winnings > 100) {
     errors.push({
-      field: 'lump_sum_tax',
-      message: 'Lump sum tax must be between 0% and 100%'
+      field: 'federal_tax_winnings',
+      message: 'Federal tax must be between 0% and 100%'
     });
   }
-  if (inputs.annuity_tax < 0 || inputs.annuity_tax > 100) {
+  if (inputs.state_tax_winnings < 0 || inputs.state_tax_winnings > 100) {
     errors.push({
-      field: 'annuity_tax',
-      message: 'Annuity tax must be between 0% and 100%'
+      field: 'state_tax_winnings',
+      message: 'State tax must be between 0% and 100%'
     });
   }
-  if (inputs.investment_tax_rate < 0 || inputs.investment_tax_rate > 100) {
+  if (inputs.local_tax_winnings < 0 || inputs.local_tax_winnings > 100) {
     errors.push({
-      field: 'investment_tax_rate',
-      message: 'Investment tax rate must be between 0% and 100%'
+      field: 'local_tax_winnings',
+      message: 'Local tax must be between 0% and 100%'
     });
   }
 
@@ -66,16 +68,16 @@ export function validateUserInputs(inputs: UserInputParameters): ValidationResul
   }
 
   // Age validations
-  if (inputs.age < 18 || inputs.age > 120) {
+  if (inputs.age < 0 || inputs.age > 120) {
     errors.push({
       field: 'age',
-      message: 'Current age must be between 18 and 120'
+      message: 'Current age must be between 0 and 120'
     });
   }
-  if (inputs.death_age < 18 || inputs.death_age > 150) {
+  if (inputs.death_age < 0 || inputs.death_age > 150) {
     errors.push({
       field: 'death_age',
-      message: 'Expected age at death must be between 18 and 150'
+      message: 'Expected age at death must be between 0 and 150'
     });
   }
   if (inputs.death_age <= inputs.age) {
@@ -85,25 +87,11 @@ export function validateUserInputs(inputs: UserInputParameters): ValidationResul
     });
   }
 
-  // Years validation
-  if (inputs.years < 1 || inputs.years > 100) {
-    errors.push({
-      field: 'years',
-      message: 'Annuity years must be between 1 and 100'
-    });
-  }
-
   // Legacy amount validation
   if (inputs.ml < 0) {
     errors.push({
       field: 'ml',
       message: 'Legacy amount cannot be negative'
-    });
-  }
-  if (inputs.ml > inputs.total_winnings * 2) {
-    errors.push({
-      field: 'ml',
-      message: 'Legacy amount cannot exceed twice your winnings'
     });
   }
 
@@ -131,7 +119,7 @@ export function sanitizeNumericInput(value: string | number, defaultValue: numbe
   if (typeof value === 'number') {
     return isFinite(value) ? value : defaultValue;
   }
-  
+
   const parsed = parseFloat(value);
   return isFinite(parsed) ? parsed : defaultValue;
 }

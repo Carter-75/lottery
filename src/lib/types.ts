@@ -1,16 +1,28 @@
-// Parameters the user provides directly via the setup form.
 export interface UserInputParameters {
-  total_winnings: number;
-  lump_sum_tax: number;       // Percentage for lump sum tax
-  annuity_tax: number;        // Percentage for annuity tax
-  savings_apr: number;  // Single APR for all investments
+  entry_mode: 'annuity' | 'cash_value';
+  jackpot_annuity: number;
+  cash_value: number;
+  cash_value_ratio: number;
+  already_taxed: boolean;
+  
+  federal_tax_winnings: number; // percentage
+  state_tax_winnings: number;   // percentage
+  local_tax_winnings: number;   // percentage
+  
+  savings_apr: number;          // single APR
+  compound_frequency: number;   // 365, 52, 12, etc. (usually 365)
+  
   age: number;
   death_age: number;
-  years: number;              // Duration of annuity payments
-  ml: number;                 // Amount to leave behind (in today's dollars)
-  investment_tax_rate: number;// as a percentage
-  inflation_rate: number;     // as a percentage
+  ml: number;                   // Amount to leave behind (target_remaining)
+  
+  filing_status: 'single' | 'married_joint' | 'married_separate' | 'head_of_household';
+  state_tax_interest: number;   // percentage
+  local_tax_interest: number;   // percentage
+  
+  inflation_rate: number;       // percentage
 }
+
 
 // All parameters (a mix of user-provided and calculated) needed for the financial logic.
 export interface InitialParameters {

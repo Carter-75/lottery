@@ -1,361 +1,514 @@
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import Card from './Card';
 import LoadingSpinner from './LoadingSpinner';
 import { UserInputParameters, LotteryData } from '../lib/types';
 import { calculateInitialLotteryData } from '../lib/lottery-logic';
+import axios from 'axios';
 
 interface SetupFormProps {
-  onSetupComplete: (data: LotteryData) => void;
+    onSetupComplete: (data: LotteryData) => void;
 }
 
-interface FormField {
-  label: string;
-  name: keyof UserInputParameters;
-  type: string;
-  helpText?: string;
-  icon?: string;
-  props?: Record<string, any>;
-  validation?: (value: number) => string | null;
-}
+const US_STATES = [
+    { name: 'Alabama', winningsTax: 5.0, interestTax: 5.0 },
+    { name: 'Alaska', winningsTax: 0.0, interestTax: 0.0 },
+    { name: 'Arizona', winningsTax: 2.5, interestTax: 2.5 },
+    { name: 'Arkansas', winningsTax: 4.4, interestTax: 4.4 },
+    { name: 'California', winningsTax: 0.0, interestTax: 13.3 }, // CA lottery is tax free state-level, but interest is taxed heavily
+    { name: 'Colorado', winningsTax: 4.4, interestTax: 4.4 },
+    { name: 'Connecticut', winningsTax: 6.99, interestTax: 6.99 },
+    { name: 'Delaware', winningsTax: 0.0, interestTax: 6.6 }, // No DE lottery tax
+    { name: 'Florida', winningsTax: 0.0, interestTax: 0.0 },
+    { name: 'Georgia', winningsTax: 5.49, interestTax: 5.49 },
+    { name: 'Hawaii', winningsTax: 11.0, interestTax: 11.0 }, // No lottery but if won out of state
+    { name: 'Idaho', winningsTax: 5.8, interestTax: 5.8 },
+    { name: 'Illinois', winningsTax: 4.95, interestTax: 4.95 },
+    { name: 'Indiana', winningsTax: 3.05, interestTax: 3.05 },
+    { name: 'Iowa', winningsTax: 5.7, interestTax: 5.7 },
+    { name: 'Kansas', winningsTax: 5.7, interestTax: 5.7 },
+    { name: 'Kentucky', winningsTax: 4.0, interestTax: 4.0 },
+    { name: 'Louisiana', winningsTax: 4.25, interestTax: 4.25 },
+    { name: 'Maine', winningsTax: 7.15, interestTax: 7.15 },
+    { name: 'Maryland', winningsTax: 5.75, interestTax: 5.75 },
+    { name: 'Massachusetts', winningsTax: 5.0, interestTax: 5.0 },
+    { name: 'Michigan', winningsTax: 4.25, interestTax: 4.25 },
+    { name: 'Minnesota', winningsTax: 9.85, interestTax: 9.85 },
+    { name: 'Mississippi', winningsTax: 5.0, interestTax: 5.0 },
+    { name: 'Missouri', winningsTax: 4.8, interestTax: 4.8 },
+    { name: 'Montana', winningsTax: 5.9, interestTax: 5.9 },
+    { name: 'Nebraska', winningsTax: 5.84, interestTax: 5.84 },
+    { name: 'Nevada', winningsTax: 0.0, interestTax: 0.0 },
+    { name: 'New Hampshire', winningsTax: 0.0, interestTax: 0.0 }, // Has interest tax only, repealing soon, treating as 0
+    { name: 'New Jersey', winningsTax: 10.75, interestTax: 10.75 },
+    { name: 'New Mexico', winningsTax: 5.9, interestTax: 5.9 },
+    { name: 'New York', winningsTax: 8.82, interestTax: 8.82 },
+    { name: 'North Carolina', winningsTax: 4.5, interestTax: 4.5 },
+    { name: 'North Dakota', winningsTax: 2.5, interestTax: 2.5 },
+    { name: 'Ohio', winningsTax: 3.5, interestTax: 3.5 },
+    { name: 'Oklahoma', winningsTax: 4.75, interestTax: 4.75 },
+    { name: 'Oregon', winningsTax: 9.9, interestTax: 9.9 },
+    { name: 'Pennsylvania', winningsTax: 3.07, interestTax: 3.07 },
+    { name: 'Rhode Island', winningsTax: 5.99, interestTax: 5.99 },
+    { name: 'South Carolina', winningsTax: 6.4, interestTax: 6.4 },
+    { name: 'South Dakota', winningsTax: 0.0, interestTax: 0.0 },
+    { name: 'Tennessee', winningsTax: 0.0, interestTax: 0.0 },
+    { name: 'Texas', winningsTax: 0.0, interestTax: 0.0 },
+    { name: 'Utah', winningsTax: 4.65, interestTax: 4.65 },
+    { name: 'Vermont', winningsTax: 8.75, interestTax: 8.75 },
+    { name: 'Virginia', winningsTax: 5.75, interestTax: 5.75 },
+    { name: 'Washington', winningsTax: 0.0, interestTax: 0.0 }, // No state income tax generally
+    { name: 'West Virginia', winningsTax: 5.12, interestTax: 5.12 },
+    { name: 'Wisconsin', winningsTax: 7.65, interestTax: 7.65 },
+    { name: 'Wyoming', winningsTax: 0.0, interestTax: 0.0 },
+];
 
 const SetupForm: React.FC<SetupFormProps> = ({ onSetupComplete }) => {
-  const [formData, setFormData] = useState<UserInputParameters>({
-    total_winnings: 0,
-    lump_sum_tax: 37,
-    annuity_tax: 25,
-    savings_apr: 5,
-    age: 0,
-    death_age: 0,
-    years: 30,
-    ml: 0,
-    investment_tax_rate: 20.0,
-    inflation_rate: 3.5,
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
+    const [formData, setFormData] = useState<UserInputParameters>({
+        entry_mode: 'cash_value',
+        jackpot_annuity: 0,
+        cash_value: 0,
+        cash_value_ratio: 0.5,
+        already_taxed: false,
 
-  const validateField = useCallback((name: keyof UserInputParameters, value: number): string | null => {
-    switch (name) {
-      case 'total_winnings':
-        return value <= 0 ? 'Please enter a valid lottery winning amount' : null;
-      case 'age':
-        return value <= 0 || value > 120 ? 'Please enter a valid age (1-120)' : null;
-      case 'death_age':
-        return value <= 0 || value > 120 ? 'Please enter a valid life expectancy (1-120)' : 
-               value <= formData.age ? 'Life expectancy must be greater than current age' : null;
-      case 'lump_sum_tax':
-      case 'annuity_tax':
-        return value < 0 || value > 100 ? 'Tax rate must be between 0% and 100%' : null;
-      case 'savings_apr':
-        return value < 0 || value > 50 ? 'APR must be between 0% and 50%' : null;
-      case 'years':
-        return value <= 0 || value > 50 ? 'Annuity years must be between 1 and 50' : null;
-      case 'investment_tax_rate':
-      case 'inflation_rate':
-        return value < 0 || value > 100 ? 'Rate must be between 0% and 100%' : null;
-      default:
-        return null;
-    }
-  }, [formData.age]);
+        federal_tax_winnings: 37,
+        state_tax_winnings: 0,
+        local_tax_winnings: 0,
 
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target;
-    const fieldName = name as keyof UserInputParameters;
-    const numValue = type === 'number' ? parseFloat(value) || 0 : value as any;
-    
-    setFormData(prev => ({
-      ...prev,
-      [fieldName]: numValue,
-    }));
+        savings_apr: 4.25,
+        compound_frequency: 365,
 
-    // Real-time validation
-    if (type === 'number') {
-      const error = validateField(fieldName, numValue);
-      setErrors(prev => ({
-        ...prev,
-        [fieldName]: error || ''
-      }));
-    }
-  }, [validateField]);
+        age: 20,
+        death_age: 100,
+        ml: 100000,
 
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-    
-    Object.entries(formData).forEach(([key, value]) => {
-      const error = validateField(key as keyof UserInputParameters, value as number);
-      if (error) newErrors[key] = error;
+        filing_status: 'single',
+        state_tax_interest: 0,
+        local_tax_interest: 0,
+
+        inflation_rate: 3.5,
     });
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    const [selectedState, setSelectedState] = useState<string>('');
+    const [detectingState, setDetectingState] = useState(true);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-    
-    setIsSubmitting(true);
-    
-    try {
-      // Add a small delay to show loading state
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const initialData = calculateInitialLotteryData(formData);
-      onSetupComplete(initialData);
-    } catch (err: any) {
-      setErrors({ form: err.message || "An unexpected error occurred." });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [currentStep, setCurrentStep] = useState(1);
 
-  const formFields: FormField[][] = [
-    // Step 1: Basic Information
-    [
-      {
-        label: "Total Lottery Winnings",
-        name: "total_winnings",
-        type: "number",
-        helpText: "Enter the total amount you won before taxes",
-        icon: "💰",
-        props: { step: 1000000, min: 0, placeholder: "e.g., 100000000" }
-      },
-      {
-        label: "Current Age",
-        name: "age",
-        type: "number",
-        helpText: "Your current age in years",
-        icon: "👤",
-        props: { min: 1, max: 120, placeholder: "e.g., 35" }
-      },
-      {
-        label: "Life Expectancy",
-        name: "death_age",
-        type: "number",
-        helpText: "Expected age at death for planning purposes",
-        icon: "📅",
-        props: { min: 1, max: 120, placeholder: "e.g., 85" }
-      },
-    ],
-    // Step 2: Tax Information
-    [
-      {
-        label: "Lump Sum Tax Rate",
-        name: "lump_sum_tax",
-        type: "number",
-        helpText: "Combined federal and state tax rate for lump sum (typically 37-50%)",
-        icon: "📋",
-        props: { step: 0.1, min: 0, max: 100, placeholder: "37" }
-      },
-      {
-        label: "Annuity Tax Rate",
-        name: "annuity_tax",
-        type: "number",
-        helpText: "Combined tax rate for annual payments (typically 25-40%)",
-        icon: "📊",
-        props: { step: 0.1, min: 0, max: 100, placeholder: "25" }
-      },
-      {
-        label: "Annuity Payment Years",
-        name: "years",
-        type: "number",
-        helpText: "Number of years the lottery pays annual installments",
-        icon: "⏰",
-        props: { min: 1, max: 50, placeholder: "30" }
-      },
-    ],
-    // Step 3: Investment & Planning
-    [
-      {
-        label: "Investment Return (APR)",
-        name: "savings_apr",
-        type: "number",
-        helpText: "Expected annual return on your investments (conservative estimate: 4-7%)",
-        icon: "📈",
-        props: { step: 0.1, min: 0, max: 50, placeholder: "5" }
-      },
-      {
-        label: "Legacy Amount",
-        name: "ml",
-        type: "number",
-        helpText: "Amount you want to leave behind (in today's purchasing power)",
-        icon: "🎁",
-        props: { step: 100000, min: 0, placeholder: "e.g., 5000000" }
-      },
-    ],
-    // Step 4: Advanced Settings
-    [
-      {
-        label: "Investment Tax Rate",
-        name: "investment_tax_rate",
-        type: "number",
-        helpText: "Tax rate on investment gains (typically 15-20% for long-term capital gains)",
-        icon: "💼",
-        props: { step: 0.1, min: 0, max: 100, placeholder: "20" }
-      },
-      {
-        label: "Inflation Rate",
-        name: "inflation_rate",
-        type: "number",
-        helpText: "Expected annual inflation rate (historical average: 2-4%)",
-        icon: "📊",
-        props: { step: 0.1, min: 0, max: 100, placeholder: "3.5" }
-      },
-    ]
-  ];
+    // Auto-detect user state on load
+    useEffect(() => {
+        const fetchState = async () => {
+            try {
+                const res = await axios.get('https://ipapi.co/json/');
+                const stateName = res.data.region;
+                if (stateName) {
+                    const foundState = US_STATES.find(s => s.name === stateName);
+                    if (foundState) {
+                        handleStateSelection(foundState.name);
+                    }
+                }
+            } catch (e) {
+                console.warn("Could not geolocate IP for state taxes");
+            } finally {
+                setDetectingState(false);
+            }
+        };
+        fetchState();
+    }, []);
 
-  const FormField: React.FC<{ field: FormField }> = ({ field }) => (
-    <div className="field">
-      <label htmlFor={field.name} className="label has-text-weight-semibold">
-        {field.icon && <span className="mr-2">{field.icon}</span>}
-        {field.label}
-        {field.name === 'total_winnings' || field.name === 'age' || field.name === 'death_age' ? 
-          <span style={{ color: 'var(--error)' }}> *</span> : null}
-      </label>
-      <div className="control has-icons-left">
-        <input
-          className={`input ${errors[field.name] ? 'is-danger' : ''}`}
-          type={field.type}
-          id={field.name}
-          name={field.name}
-          value={String(formData[field.name])}
-          onChange={handleChange}
-          disabled={isSubmitting}
-          {...field.props}
-        />
-        <span className="icon is-small is-left">
-          <span>{field.icon || '💡'}</span>
-        </span>
-      </div>
-      {field.helpText && (
-        <p className="help" style={{ color: 'var(--text-tertiary)' }}>
-          {field.helpText}
-        </p>
-      )}
-      {errors[field.name] && (
-        <p className="help is-danger">{errors[field.name]}</p>
-      )}
-    </div>
-  );
+    const handleStateSelection = (stateName: string) => {
+        setSelectedState(stateName);
+        const s = US_STATES.find(s => s.name === stateName);
+        if (s) {
+            setFormData(prev => ({
+                ...prev,
+                state_tax_winnings: s.winningsTax,
+                state_tax_interest: s.interestTax
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                state_tax_winnings: 0,
+                state_tax_interest: 0
+            }));
+        }
+    };
 
-  const totalSteps = formFields.length;
+    const validateField = useCallback((name: keyof UserInputParameters, value: any): string | null => {
+        if (typeof value === 'number') {
+            if (['jackpot_annuity', 'cash_value', 'ml'].includes(name) && value < 0) return 'Cannot be negative';
+            if (name === 'age' && (value <= 0 || value > 120)) return 'Invalid age';
+            if (name === 'death_age' && (value <= formData.age || value > 120)) return 'Invalid life expectancy';
+            if (name.includes('tax') && (value < 0 || value > 100)) return 'Tax rates must be 0-100%';
+            if (name === 'savings_apr' && (value < 0 || value > 50)) return 'Unrealistic APR';
+            if (name === 'inflation_rate' && (value < 0 || value > 50)) return 'Unrealistic inflation';
+        }
+        return null;
+    }, [formData.age]);
 
-  return (
-    <form onSubmit={handleSubmit}>
-      <Card>
-        {/* Header */}
-        <div className="has-text-centered mb-6">
-          <h2 className="title is-2" style={{ color: 'var(--primary-400)' }}>
-            💰 Lottery Calculator Setup
-          </h2>
-          <p className="subtitle is-5" style={{ color: 'var(--text-secondary)' }}>
-            Let's analyze your lottery winnings and create a financial plan
-          </p>
-        </div>
+    const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value, type } = e.target;
 
-        {/* Progress Indicator */}
-        <div className="mb-6">
-          <div className="columns is-mobile is-multiline">
-            {Array.from({ length: totalSteps }).map((_, index) => (
-              <div key={index} className="column is-3-desktop is-6-mobile">
-                <div 
-                  className={`box has-text-centered p-3 ${currentStep === index + 1 ? 'has-background-primary-light' : ''}`}
-                  style={{
-                    background: currentStep === index + 1 ? 'var(--primary-600)' : 
-                               currentStep > index + 1 ? 'var(--success)' : 'var(--bg-tertiary)',
-                    color: currentStep >= index + 1 ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                    border: `2px solid ${currentStep === index + 1 ? 'var(--primary-400)' : 'transparent'}`,
-                    borderRadius: 'var(--radius-md)',
-                    cursor: 'pointer'
-                  }}
-                  onClick={() => setCurrentStep(index + 1)}
-                >
-                  <span className="is-size-6 has-text-weight-bold">
-                    {['Basic Info', 'Taxes', 'Investments', 'Advanced'][index]}
-                  </span>
+        let parsedValue: any = value;
+        if (type === 'number') {
+            // Allow empty string to let users clear the field, otherwise parse.
+            parsedValue = value === '' ? '' : parseFloat(value);
+            if (isNaN(parsedValue) && value !== '') parsedValue = 0;
+        } else if (type === 'checkbox') {
+            parsedValue = (e.target as HTMLInputElement).checked;
+        }
+
+        const fieldName = name as keyof UserInputParameters;
+
+        setFormData(prev => ({
+            ...prev,
+            [fieldName]: parsedValue,
+        }));
+
+        if (type === 'number') {
+            const error = validateField(fieldName, parsedValue);
+            setErrors(prev => ({
+                ...prev,
+                [fieldName]: error || ''
+            }));
+        }
+    }, [validateField]);
+
+    const validateForm = (): boolean => {
+        const newErrors: Record<string, string> = {};
+        Object.entries(formData).forEach(([key, value]) => {
+            const error = validateField(key as keyof UserInputParameters, value);
+            if (error) newErrors[key] = error;
+        });
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!validateForm()) return;
+
+        setIsSubmitting(true);
+
+        try {
+            await new Promise(resolve => setTimeout(resolve, 300));
+            const initialData = calculateInitialLotteryData(formData);
+            onSetupComplete(initialData);
+        } catch (err: any) {
+            setErrors({ form: err.message || "An unexpected error occurred." });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const renderStep1 = () => (
+        <div className="columns is-multiline">
+            <div className="column is-12 mb-4">
+                <div className="tabs is-toggle is-fullwidth">
+                    <ul>
+                        <li className={formData.entry_mode === 'cash_value' ? 'is-active' : ''}>
+                            <a onClick={() => handleChange({ target: { name: 'entry_mode', value: 'cash_value', type: 'text' } } as any)}>
+                                <span>💵 Enter Cash Value directly</span>
+                            </a>
+                        </li>
+                        <li className={formData.entry_mode === 'annuity' ? 'is-active' : ''}>
+                            <a onClick={() => handleChange({ target: { name: 'entry_mode', value: 'annuity', type: 'text' } } as any)}>
+                                <span>🎰 Enter Advertised Jackpot (Annuity)</span>
+                            </a>
+                        </li>
+                    </ul>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Current Step Content */}
-        <div className="mb-6">
-          <div className="columns is-multiline">
-            {formFields[currentStep - 1]?.map((field) => (
-              <div key={field.name} className="column is-6-desktop is-12-mobile">
-                <FormField field={field} />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <div className="field is-grouped is-grouped-centered">
-          {currentStep > 1 && (
-            <div className="control">
-              <button
-                type="button"
-                className="button is-outlined"
-                onClick={() => setCurrentStep(currentStep - 1)}
-                disabled={isSubmitting}
-              >
-                Previous
-              </button>
             </div>
-          )}
-          
-          {currentStep < totalSteps ? (
-            <div className="control">
-              <button
-                type="button"
-                className="button is-primary"
-                onClick={() => setCurrentStep(currentStep + 1)}
-                disabled={isSubmitting}
-              >
-                Next Step
-              </button>
+
+            {formData.entry_mode === 'cash_value' ? (
+                <div className="column is-12">
+                    <div className="field">
+                        <label className="label">Lump Sum Cash Value <span className="has-text-danger">*</span></label>
+                        <div className="control has-icons-left">
+                            <input className="input is-large" type="number" name="cash_value" value={formData.cash_value || ''} onChange={handleChange} placeholder="e.g. 50000000" />
+                            <span className="icon is-left">💰</span>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <>
+                    <div className="column is-6">
+                        <div className="field">
+                            <label className="label">Advertised Jackpot <span className="has-text-danger">*</span></label>
+                            <div className="control has-icons-left">
+                                <input className="input is-large" type="number" name="jackpot_annuity" value={formData.jackpot_annuity || ''} onChange={handleChange} placeholder="e.g. 100000000" />
+                                <span className="icon is-left">🎰</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="column is-6">
+                        <div className="field">
+                            <label className="label">Cash Value Ratio (Typical: 0.45 - 0.55)</label>
+                            <div className="control">
+                                <input className="input is-large" type="number" step="0.01" name="cash_value_ratio" value={formData.cash_value_ratio} onChange={handleChange} />
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            <div className="column is-12 mt-4">
+                <div className="field">
+                    <label className="checkbox box" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <input type="checkbox" name="already_taxed" checked={formData.already_taxed} onChange={handleChange} />
+                        <strong>Are these winnings already post-tax?</strong> (Check this if you are entering an amount that has already had taxes deducted)
+                    </label>
+                </div>
             </div>
-          ) : (
-            <div className="control">
-              <button 
-                type="submit" 
-                className="button is-primary is-large button-long-text"
-                disabled={isSubmitting || Object.values(errors).some(err => err)}
-                title="Calculate My Financial Plan"
-              >
-                {isSubmitting ? (
-                  <>
-                    <LoadingSpinner size="small" />
-                    <span className="ml-2">Calculating...</span>
-                  </>
-                ) : (
-                  <span className="button-text-responsive">🚀 Calculate My Financial Plan</span>
+        </div>
+    );
+
+    const renderStep2 = () => (
+        <div className="columns is-multiline">
+            {!formData.already_taxed && (
+                <div className="column is-12 mb-5">
+                    <div className="notification is-info is-light">
+                        <strong>Note:</strong> We attempt to auto-detect your state to pull the correct Winnings and Interest tax rates.
+                    </div>
+
+                    <div className="field">
+                        <label className="label">Your US State</label>
+                        <div className="control has-icons-left">
+                            <div className={`select is-fullwidth ${detectingState ? 'is-loading' : ''}`}>
+                                <select value={selectedState} onChange={(e) => handleStateSelection(e.target.value)}>
+                                    <option value="">-- Manual entry (Select State) --</option>
+                                    {US_STATES.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
+                                </select>
+                            </div>
+                            <span className="icon is-left">📍</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {!formData.already_taxed && (
+                <>
+                    <div className="column is-4">
+                        <div className="field">
+                            <label className="label">Federal Tax (Winnings) %</label>
+                            <div className="control">
+                                <input className="input" type="number" step="0.1" name="federal_tax_winnings" value={formData.federal_tax_winnings} onChange={handleChange} />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="column is-4">
+                        <div className="field">
+                            <label className="label">State Tax (Winnings) %</label>
+                            <div className="control">
+                                <input className="input" type="number" step="0.1" name="state_tax_winnings" value={formData.state_tax_winnings} onChange={handleChange} />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="column is-4">
+                        <div className="field">
+                            <label className="label">Local Tax (Winnings) %</label>
+                            <div className="control">
+                                <input className="input" type="number" step="0.1" name="local_tax_winnings" value={formData.local_tax_winnings} onChange={handleChange} />
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            <div className="column is-12 pt-5 mt-3" style={{ borderTop: '1px solid var(--bg-tertiary)' }}>
+                <h4 className="title is-5 mb-4">Personal Info</h4>
+            </div>
+
+            <div className="column is-6">
+                <div className="field">
+                    <label className="label">Current Age <span className="has-text-danger">*</span></label>
+                    <div className="control">
+                        <input className="input" type="number" name="age" value={formData.age} onChange={handleChange} />
+                    </div>
+                </div>
+            </div>
+            <div className="column is-6">
+                <div className="field">
+                    <label className="label">Expected Life Expectancy <span className="has-text-danger">*</span></label>
+                    <div className="control">
+                        <input className="input" type="number" name="death_age" value={formData.death_age} onChange={handleChange} />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderStep3 = () => (
+        <div className="columns is-multiline">
+            <div className="column is-6">
+                <div className="field">
+                    <label className="label">Savings Return (APR) %</label>
+                    <div className="control">
+                        <input className="input" type="number" step="0.01" name="savings_apr" value={formData.savings_apr} onChange={handleChange} />
+                    </div>
+                    <p className="help">Typical safe bounds: 4% to 8%</p>
+                </div>
+            </div>
+            <div className="column is-6">
+                <div className="field">
+                    <label className="label">Legacy Amount to leave behind</label>
+                    <div className="control">
+                        <input className="input" type="number" step="1000" name="ml" value={formData.ml} onChange={handleChange} />
+                    </div>
+                    <p className="help">Target remaining balance exactly at life expectancy</p>
+                </div>
+            </div>
+
+            <div className="column is-12 pt-5 mt-3" style={{ borderTop: '1px solid var(--bg-tertiary)' }}>
+                <h4 className="title is-5 mb-4">Taxes on Interest Income</h4>
+            </div>
+
+            <div className="column is-12">
+                <div className="field">
+                    <label className="label">Tax Filing Status</label>
+                    <div className="control">
+                        <div className="select is-fullwidth">
+                            <select name="filing_status" value={formData.filing_status} onChange={handleChange}>
+                                <option value="single">Single</option>
+                                <option value="married_joint">Married Filing Jointly</option>
+                                <option value="married_separate">Married Filing Separately</option>
+                                <option value="head_of_household">Head of Household</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="column is-6">
+                <div className="field">
+                    <label className="label">State Income Tax %</label>
+                    <div className="control">
+                        <input className="input" type="number" step="0.1" name="state_tax_interest" value={formData.state_tax_interest} onChange={handleChange} />
+                    </div>
+                    <p className="help">Auto-filled if you selected a state</p>
+                </div>
+            </div>
+            <div className="column is-6">
+                <div className="field">
+                    <label className="label">Local Income Tax %</label>
+                    <div className="control">
+                        <input className="input" type="number" step="0.1" name="local_tax_interest" value={formData.local_tax_interest} onChange={handleChange} />
+                    </div>
+                </div>
+            </div>
+
+            <div className="column is-12 pt-5 mt-3" style={{ borderTop: '1px solid var(--bg-tertiary)' }}>
+                <h4 className="title is-5 mb-4">Economy Model</h4>
+            </div>
+
+            <div className="column is-6">
+                <div className="field">
+                    <label className="label">Inflation Rate %</label>
+                    <div className="control">
+                        <input className="input" type="number" step="0.1" name="inflation_rate" value={formData.inflation_rate} onChange={handleChange} />
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    return (
+        <form onSubmit={handleSubmit}>
+            <Card>
+                <div className="has-text-centered mb-6">
+                    <h2 className="title is-2" style={{ color: 'var(--primary-400)' }}>
+                        💰 Lottery Calculator Setup
+                    </h2>
+                    <p className="subtitle is-5" style={{ color: 'var(--text-secondary)' }}>
+                        Map out your exact deterministic withdrawal limits.
+                    </p>
+                </div>
+
+                <div className="mb-6">
+                    <div className="columns is-mobile is-multiline">
+                        {['Lottery Winnings', 'Taxes & Info', 'Investments'].map((label, index) => (
+                            <div key={index} className="column is-4-desktop is-12-mobile">
+                                <div
+                                    className={`box has-text-centered p-3 ${currentStep === index + 1 ? 'has-background-primary-light' : ''}`}
+                                    style={{
+                                        background: currentStep === index + 1 ? 'var(--primary-600)' :
+                                            currentStep > index + 1 ? 'var(--success)' : 'var(--bg-tertiary)',
+                                        color: currentStep >= index + 1 ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                                        border: `2px solid ${currentStep === index + 1 ? 'var(--primary-400)' : 'transparent'}`,
+                                        cursor: 'pointer'
+                                    }}
+                                    onClick={() => setCurrentStep(index + 1)}
+                                >
+                                    <span className="is-size-6 has-text-weight-bold">
+                                        {index + 1}. {label}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="mb-6">
+                    {currentStep === 1 && renderStep1()}
+                    {currentStep === 2 && renderStep2()}
+                    {currentStep === 3 && renderStep3()}
+                </div>
+
+                <div className="field is-grouped is-grouped-centered">
+                    {currentStep > 1 && (
+                        <div className="control">
+                            <button
+                                type="button"
+                                className="button is-outlined"
+                                onClick={() => setCurrentStep(currentStep - 1)}
+                                disabled={isSubmitting}
+                            >
+                                Previous
+                            </button>
+                        </div>
+                    )}
+
+                    {currentStep < 3 ? (
+                        <div className="control">
+                            <button
+                                type="button"
+                                className="button is-primary"
+                                onClick={() => setCurrentStep(currentStep + 1)}
+                                disabled={isSubmitting}
+                            >
+                                Next Step
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="control">
+                            <button
+                                type="submit"
+                                className="button is-primary is-large button-long-text"
+                                disabled={isSubmitting || Object.values(errors).some(err => err)}
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <LoadingSpinner size="small" />
+                                        <span className="ml-2">Calculating...</span>
+                                    </>
+                                ) : (
+                                    <span className="button-text-responsive">🚀 Calculate My Financial Plan</span>
+                                )}
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {errors.form && (
+                    <div className="notification is-danger mt-4">
+                        <strong>Error:</strong> {errors.form}
+                    </div>
                 )}
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Form Error */}
-        {errors.form && (
-          <div className="notification is-danger mt-4">
-            <strong>Error:</strong> {errors.form}
-          </div>
-        )}
-
-        {/* Required Fields Note */}
-        <div className="mt-5 pt-4" style={{ borderTop: '1px solid var(--bg-quaternary)' }}>
-          <p className="has-text-centered is-size-7" style={{ color: 'var(--text-tertiary)' }}>
-            <span style={{ color: 'var(--error)' }}>*</span> Required fields | 
-            All calculations are estimates for planning purposes only
-          </p>
-        </div>
-      </Card>
-    </form>
-  );
+            </Card>
+        </form>
+    );
 };
 
 export default SetupForm; 
