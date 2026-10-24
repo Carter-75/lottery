@@ -27,13 +27,14 @@ export function middleware(request: NextRequest) {
   )
 
   // Determine iframe embedding policy
-  let frameAncestors = "'self'"
-  if (isAuthorizedIframe) {
-    const authorizedFrameAncestors = authorizedDomains
-      .filter(domain => !domain.includes('localhost'))
-      .join(' ')
-    frameAncestors = `'self' ${authorizedFrameAncestors}`
-  }
+  // The embedding allowlist is enforced directly by CSP frame-ancestors on
+  // every response, whether or not a Referer header arrives. Browsers and
+  // privacy tools may strip or omit the referer, and gating the policy on it
+  // made the same page alternate between allowing the portfolio and DENY.
+  const authorizedFrameAncestors = authorizedDomains
+    .filter(domain => !domain.includes('localhost'))
+    .join(' ')
+  const frameAncestors = `'self' ${authorizedFrameAncestors}`
 
   // Set security headers
   const securityHeaders = {
@@ -50,8 +51,10 @@ export function middleware(request: NextRequest) {
       form-action 'self';
     `.replace(/\s+/g, ' ').trim(),
     
-    // X-Frame-Options - Allow framing from authorized domains
-    'X-Frame-Options': isAuthorizedIframe ? 'SAMEORIGIN' : 'DENY',
+    // X-Frame-Options - Legacy header kept consistent with Carter's other
+    // sites: ALLOWALL lets the CSP frame-ancestors policy above decide who
+    // may frame this site, instead of contradicting it with SAMEORIGIN/DENY.
+    'X-Frame-Options': 'ALLOWALL',
     
     // Other security headers
     'X-Content-Type-Options': 'nosniff',
