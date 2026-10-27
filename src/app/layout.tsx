@@ -10,37 +10,26 @@ export const metadata: Metadata = {
   },
   description: "Professional lottery winnings calculator with advanced financial planning features. Calculate lump sum vs annuity, sustainable withdrawal rates, and optimize your financial future with our comprehensive analysis tools.",
   keywords: ["lottery calculator", "financial planning", "lump sum calculator", "annuity calculator", "retirement planning", "investment calculator"],
-  authors: [{ name: "Lottery Calculator Pro" }],
-  creator: "Lottery Calculator Pro",
-  publisher: "Financial Tools Inc",
+  authors: [{ name: "Carter Moyer" }],
+  creator: "Carter Moyer",
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://lottery-calculator-pro.vercel.app'),
+  metadataBase: new URL('https://lottery-three.vercel.app'),
   openGraph: {
     title: "Professional Lottery Winnings Calculator",
-    description: "Calculate your lottery winnings and plan your financial future with our professional-grade tools.",
-    url: "https://lottery-calculator-pro.vercel.app",
+    description: "Calculate your lottery winnings and model a long-term spending plan with this estimates-only calculator.",
+    url: "https://lottery-three.vercel.app",
     siteName: "Lottery Calculator Pro",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Lottery Calculator Pro - Professional Financial Planning"
-      }
-    ],
     locale: "en_US",
     type: "website",
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "Professional Lottery Winnings Calculator",
-    description: "Calculate your lottery winnings and plan your financial future with our professional-grade tools.",
-    images: ["/twitter-image.png"],
-    creator: "@LotteryCalcPro",
+    description: "Calculate your lottery winnings and model a long-term spending plan with this estimates-only calculator.",
   },
   robots: {
     index: true,
@@ -52,9 +41,6 @@ export const metadata: Metadata = {
       'max-image-preview': 'large',
       'max-snippet': -1,
     },
-  },
-  verification: {
-    google: "verification-code-here",
   },
   category: "finance",
 };
@@ -81,14 +67,11 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/manifest.json" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Lottery Calculator Pro" />
         <meta name="application-name" content="Lottery Calculator Pro" />
         <meta name="msapplication-TileColor" content="#dc2626" />
-        <meta name="msapplication-config" content="/browserconfig.xml" />
       </head>
       <body className="antialiased">
         <IframeProvider>

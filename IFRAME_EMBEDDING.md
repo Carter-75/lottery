@@ -5,7 +5,7 @@ This document explains how to embed the Professional Lottery Winnings Calculator
 ## Overview
 
 The Lottery Winnings Calculator now supports iframe embedding with the following features:
-- **Secure iframe headers** - Proper X-Frame-Options and CSP configuration
+- **Secure iframe headers** - CSP frame-ancestors allowlist configuration. No X-Frame-Options header is sent: the ALLOWALL value used previously is not a valid X-Frame-Options value and was ignored by browsers, so frame-ancestors is the single governing policy
 - **Responsive design** - Adapts to iframe container dimensions
 - **Portfolio integration** - Special styling and behavior for carter-portfolio.fyi
 - **Parent communication** - PostMessage API for interaction with parent page

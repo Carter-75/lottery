@@ -1,16 +1,24 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import Card from './Card';
 import LoadingSpinner from './LoadingSpinner';
 import { UserInputParameters, LotteryData } from '../lib/types';
 import { calculateInitialLotteryData } from '../lib/lottery-logic';
-import axios from 'axios';
+import { validateUserInputs } from '../lib/validation';
 
 interface SetupFormProps {
     onSetupComplete: (data: LotteryData) => void;
 }
 
+// Starting estimates only. Winnings and interest rates are each state's top
+// state income tax rate (checked Oct 2026), NOT lottery withholding rates, and
+// most states tax winnings as ordinary income at graduated rates, so the real
+// bill depends on total income. Every rate stays editable in the form; verify
+// yours before relying on the result. Two corrections from the original
+// table: Delaware does tax residents' winnings as income (top rate 6.6%, it
+// is not 0%), and Iowa's flat income tax is 3.8% (its 5% figure is only the
+// withholding rate), not 5.7%.
 const US_STATES = [
     { name: 'Alabama', winningsTax: 5.0, interestTax: 5.0 },
     { name: 'Alaska', winningsTax: 0.0, interestTax: 0.0 },
@@ -19,14 +27,15 @@ const US_STATES = [
     { name: 'California', winningsTax: 0.0, interestTax: 13.3 }, // CA lottery is tax free state-level, but interest is taxed heavily
     { name: 'Colorado', winningsTax: 4.4, interestTax: 4.4 },
     { name: 'Connecticut', winningsTax: 6.99, interestTax: 6.99 },
-    { name: 'Delaware', winningsTax: 0.0, interestTax: 6.6 }, // No DE lottery tax
+    { name: 'Delaware', winningsTax: 6.6, interestTax: 6.6 }, // DE taxes residents' winnings as ordinary income; no state withholding at payout
+    { name: 'District of Columbia', winningsTax: 10.75, interestTax: 10.75 },
     { name: 'Florida', winningsTax: 0.0, interestTax: 0.0 },
     { name: 'Georgia', winningsTax: 5.49, interestTax: 5.49 },
     { name: 'Hawaii', winningsTax: 11.0, interestTax: 11.0 }, // No lottery but if won out of state
     { name: 'Idaho', winningsTax: 5.8, interestTax: 5.8 },
     { name: 'Illinois', winningsTax: 4.95, interestTax: 4.95 },
     { name: 'Indiana', winningsTax: 3.05, interestTax: 3.05 },
-    { name: 'Iowa', winningsTax: 5.7, interestTax: 5.7 },
+    { name: 'Iowa', winningsTax: 3.8, interestTax: 3.8 }, // IA flat income tax 3.8%; the 5% figure sometimes listed is only the withholding rate
     { name: 'Kansas', winningsTax: 5.7, interestTax: 5.7 },
     { name: 'Kentucky', winningsTax: 4.0, interestTax: 4.0 },
     { name: 'Louisiana', winningsTax: 4.25, interestTax: 4.25 },
@@ -91,32 +100,15 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSetupComplete }) => {
     });
 
     const [selectedState, setSelectedState] = useState<string>('');
-    const [detectingState, setDetectingState] = useState(true);
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
 
-    // Auto-detect user state on load
-    useEffect(() => {
-        const fetchState = async () => {
-            try {
-                const res = await axios.get('https://ipapi.co/json/');
-                const stateName = res.data.region;
-                if (stateName) {
-                    const foundState = US_STATES.find(s => s.name === stateName);
-                    if (foundState) {
-                        handleStateSelection(foundState.name);
-                    }
-                }
-            } catch (e) {
-                console.warn("Could not geolocate IP for state taxes");
-            } finally {
-                setDetectingState(false);
-            }
-        };
-        fetchState();
-    }, []);
+    // No automatic state detection: the old version sent the visitor's IP
+    // address to a third-party geolocation service (ipapi.co) on page load,
+    // which contradicted this site's own privacy claims. The state is picked
+    // manually below instead, and nothing leaves the browser.
 
     const handleStateSelection = (stateName: string) => {
         setSelectedState(stateName);
@@ -177,10 +169,18 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSetupComplete }) => {
     }, [validateField]);
 
     const validateForm = (): boolean => {
+        // Final gate uses the shared validator in lib/validation.ts, which also
+        // checks cross-field rules the per-field checks cannot see (combined
+        // tax over 100%, cash value ratio range, a $0 prize). Per-field errors
+        // collected while typing are merged in, not replaced.
+        const result = validateUserInputs(formData);
         const newErrors: Record<string, string> = {};
+        result.errors.forEach(err => {
+            newErrors[err.field] = err.message;
+        });
         Object.entries(formData).forEach(([key, value]) => {
             const error = validateField(key as keyof UserInputParameters, value);
-            if (error) newErrors[key] = error;
+            if (error && !newErrors[key]) newErrors[key] = error;
         });
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -270,13 +270,13 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSetupComplete }) => {
             {!formData.already_taxed && (
                 <div className="column is-12 mb-5">
                     <div className="notification is-info is-light">
-                        <strong>Note:</strong> We attempt to auto-detect your state to pull the correct Winnings and Interest tax rates.
+                        <strong>Note:</strong> Pick your state to fill in starting estimates for the state tax rates. These are top state income tax rates, not lottery withholding rates, and they are only estimates: winnings are usually taxed as ordinary income, so your real rate depends on your total income. Every rate stays editable below.
                     </div>
 
                     <div className="field">
                         <label className="label">Your US State</label>
                         <div className="control has-icons-left">
-                            <div className={`select is-fullwidth ${detectingState ? 'is-loading' : ''}`}>
+                            <div className="select is-fullwidth">
                                 <select value={selectedState} onChange={(e) => handleStateSelection(e.target.value)}>
                                     <option value="">-- Manual entry (Select State) --</option>
                                     {US_STATES.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
@@ -500,6 +500,17 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSetupComplete }) => {
                         </div>
                     )}
                 </div>
+
+                {Object.entries(errors).filter(([key, msg]) => key !== 'form' && msg).length > 0 && (
+                    <div className="notification is-danger mt-4">
+                        <strong>Please fix the following:</strong>
+                        <ul>
+                            {Object.entries(errors).filter(([key, msg]) => key !== 'form' && msg).map(([key, msg]) => (
+                                <li key={key}>{msg}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
 
                 {errors.form && (
                     <div className="notification is-danger mt-4">

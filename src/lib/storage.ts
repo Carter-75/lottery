@@ -38,39 +38,49 @@ export function saveLotteryData(data: LotteryData): boolean {
  * Loads lottery data from local storage
  * @returns Lottery data if found, null otherwise
  */
+// Accepts both storage shapes this app has produced: the wrapped
+// { version, data, lastModified } format written by saveLotteryData, and the
+// raw LotteryData format the main page wrote directly in earlier versions.
+// Throwing away the raw shape on load would silently erase existing users'
+// saved plans, so both are normalized to the wrapped form here.
+export function unwrapStoredData(parsed: any): LotteryData | null {
+  if (!parsed || typeof parsed !== 'object') return null;
+  if (parsed.initial_parameters && parsed.state) {
+    return parsed as LotteryData;
+  }
+  if (parsed.data && parsed.data.initial_parameters && parsed.data.state) {
+    return parsed.data as LotteryData;
+  }
+  return null;
+}
+
 export function loadLotteryData(): LotteryData | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return null;
 
-    const parsed: StoredData = JSON.parse(stored);
-    
-    // Version check for future migrations
-    if (parsed.version !== STORAGE_VERSION) {
-      console.warn('Storage version mismatch, data may need migration');
-    }
+    const parsed = JSON.parse(stored);
+    const data = unwrapStoredData(parsed);
 
     // Validate data structure thoroughly
-    if (!parsed.data || 
-        !parsed.data.initial_parameters || 
-        !parsed.data.state ||
-        !parsed.data.initial_parameters.user_inputs ||
-        typeof parsed.data.state.lump_balance !== 'number' ||
-        typeof parsed.data.state.annual_balance !== 'number') {
+    if (!data ||
+        !data.initial_parameters.user_inputs ||
+        typeof data.state.lump_balance !== 'number' ||
+        typeof data.state.annual_balance !== 'number') {
       console.error('Invalid data structure in storage');
       localStorage.removeItem(STORAGE_KEY);
       return null;
     }
 
     // Validate numeric values are finite
-    const state = parsed.data.state;
+    const state = data.state;
     if (!isFinite(state.lump_balance) || !isFinite(state.annual_balance) || !isFinite(state.years_passed)) {
       console.error('Invalid numeric values in storage');
       localStorage.removeItem(STORAGE_KEY);
       return null;
     }
 
-    return parsed.data;
+    return data;
   } catch (error) {
     console.error('Failed to load lottery data:', error);
     localStorage.removeItem(STORAGE_KEY);
@@ -141,18 +151,19 @@ export function importLotteryData(file: File): Promise<LotteryData> {
     reader.onload = (e) => {
       try {
         const content = e.target?.result as string;
-        const parsed: StoredData = JSON.parse(content);
-        
-        // Thorough validation
-        if (!parsed.data || 
-            !parsed.data.initial_parameters || 
-            !parsed.data.state ||
-            !parsed.data.initial_parameters.user_inputs) {
+        const parsed = JSON.parse(content);
+
+        // Accept both export shapes: the wrapped format from
+        // exportLotteryData, and the raw LotteryData JSON produced by the
+        // dashboard's own JSON export (exportToJSON). Before this, a file
+        // exported from the dashboard could not be imported back.
+        const imported = unwrapStoredData(parsed);
+        if (!imported || !imported.initial_parameters.user_inputs) {
           throw new Error('Invalid data structure');
         }
 
         // Validate all required fields exist and are valid numbers
-        const { state, initial_parameters } = parsed.data;
+        const { state, initial_parameters } = imported;
         if (!isFinite(state.lump_balance) || 
             !isFinite(state.annual_balance) || 
             !isFinite(state.years_passed) ||
@@ -166,7 +177,7 @@ export function importLotteryData(file: File): Promise<LotteryData> {
           throw new Error('Invalid date format');
         }
         
-        resolve(parsed.data);
+        resolve(imported);
       } catch (error) {
         if (error instanceof Error) {
           reject(new Error(`Failed to parse import file: ${error.message}`));

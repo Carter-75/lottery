@@ -6,6 +6,7 @@ import LoadingSpinner from './LoadingSpinner';
 import { LotteryData } from '../lib/types';
 import { calculateUpdate, calculateWithdrawalLimits, formatMoney } from '../lib/lottery-logic';
 import { exportToCSV, exportToJSON, downloadCSV, downloadJSON } from '../lib/export-utils';
+import DataManagement from './DataManagement';
 
 interface UpdateViewProps {
   data: LotteryData;
@@ -65,6 +66,9 @@ const LimitsTable: React.FC<{ limits: any, title: string, icon: string }> = ({ l
           <div className="level-item has-text-right">
             <p className="has-text-weight-bold is-size-6" style={{ color: 'var(--text-primary)' }}>
               {formatMoney(value.nominal)} Net
+            </p>
+            <p className="is-size-7" style={{ color: 'var(--text-tertiary)' }}>
+              {formatMoney(value.real)} in today's dollars
             </p>
             <p className="is-size-7" style={{ color: 'var(--text-tertiary)' }}>
               Taxes: {formatMoney(value.annual_tax)}/yr
@@ -220,17 +224,22 @@ const UpdateView: React.FC<UpdateViewProps> = ({ data, onUpdate, onReset }) => {
               </h2>
             </div>
 
+            <p className="is-size-7 mb-4" style={{ color: 'var(--text-tertiary)' }}>
+              The two balances below are alternative scenarios for the same winnings,
+              tracked side by side for comparison. They are not two accounts held at once,
+              and they should not be added together.
+            </p>
             <SummaryItem
-              label="Lump Sum Balance"
+              label="Lump Sum Scenario Balance"
               value={data.state.lump_balance}
               icon="🏦"
-              subtitle="Current investment balance"
+              subtitle="If you had taken the cash option"
             />
             <SummaryItem
-              label="Annuity Balance"
+              label="Annuity Scenario Balance"
               value={data.state.annual_balance}
               icon="📅"
-              subtitle="Annual payments received"
+              subtitle="Payments received so far under the annuity option"
             />
             <SummaryItem
               label="Legacy Goal"
@@ -401,6 +410,11 @@ const UpdateView: React.FC<UpdateViewProps> = ({ data, onUpdate, onReset }) => {
             </Card>
           </div>
         )}
+
+        {/* Import / restore from a previous export */}
+        <div className="column is-12">
+          <DataManagement data={data} onImport={onUpdate} />
+        </div>
 
         {/* Reset Button */}
         <div className="column is-12">

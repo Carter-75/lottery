@@ -20,6 +20,20 @@ export function calculateInitialLotteryData(inputs: UserInputParameters): Lotter
     if (years <= 0) {
         throw new Error('Invalid input: years (death age - current age) must be positive');
     }
+    if (entry_mode === 'annuity' && !(cash_value_ratio > 0 && cash_value_ratio <= 1)) {
+        throw new Error('Invalid input: cash value ratio must be greater than 0 and at most 1');
+    }
+
+    // One combined winnings tax rate, applied only when the entered amounts are pre-tax.
+    // It is used for BOTH the lump sum and the annuity scenario, so already-taxed
+    // amounts are never taxed a second time in either scenario.
+    const total_tax_rate_winnings = already_taxed ? 0 : (federal_tax_winnings + state_tax_winnings + local_tax_winnings) / 100;
+    if (total_tax_rate_winnings > 1) {
+        throw new Error('Invalid input: combined federal, state, and local tax rates on winnings cannot exceed 100%');
+    }
+    if (total_tax_rate_winnings < 0) {
+        throw new Error('Invalid input: tax rates on winnings cannot be negative');
+    }
 
     // 1. Calculate the initial cash value
     let initial_cash_value = cash_value;
@@ -28,18 +42,13 @@ export function calculateInitialLotteryData(inputs: UserInputParameters): Lotter
     }
 
     // 2. Calculate the after-tax lump sum
-    let lump_sum_net = initial_cash_value;
-    if (!already_taxed) {
-        const total_tax_rate_winnings = (federal_tax_winnings + state_tax_winnings + local_tax_winnings) / 100;
-        lump_sum_net = initial_cash_value * (1 - total_tax_rate_winnings);
-    }
+    const lump_sum_net = initial_cash_value * (1 - total_tax_rate_winnings);
 
-    // Keep annuity option around for purely display/legacy sake if needed, 
+    // Keep annuity option around for purely display/legacy sake if needed,
     // but the core logic for drawdown will use the lump_sum_net.
     // We'll calculate a theoretical base_annuity_payment for backward compatibility:
     const annuity_growth_rate = 1.05;
-    const annuity_tax_rate = (federal_tax_winnings + state_tax_winnings + local_tax_winnings) / 100;
-    const gross_annuity_value = jackpot_annuity > 0 ? jackpot_annuity * (1 - annuity_tax_rate) : initial_cash_value / cash_value_ratio * (1 - annuity_tax_rate);
+    const gross_annuity_value = jackpot_annuity > 0 ? jackpot_annuity * (1 - total_tax_rate_winnings) : initial_cash_value / cash_value_ratio * (1 - total_tax_rate_winnings);
 
     let base_annuity_payment = 0;
     const annuity_payout_years = 30; // standard lottery annuity length
@@ -53,6 +62,7 @@ export function calculateInitialLotteryData(inputs: UserInputParameters): Lotter
     const initial_parameters: InitialParameters = {
         user_inputs: inputs,
         start_year: currentDate.getFullYear(),
+        start_date: currentDate.toISOString().split('T')[0],
         lump_sum_net,
         base_annuity_payment,
         annuity_growth_rate,
@@ -70,31 +80,48 @@ export function calculateInitialLotteryData(inputs: UserInputParameters): Lotter
     return { initial_parameters, state };
 }
 
+// Parses a "YYYY-MM-DD" date as UTC midnight. Plain new Date("YYYY-MM-DD") is
+// also UTC, but pulling the components apart here keeps every comparison below
+// in UTC instead of mixing in local-timezone getters.
+function parseDateUTC(dateStr: string): Date {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(Date.UTC(y, (m || 1) - 1, d || 1));
+}
+
+function dateToUTCString(d: Date): string {
+    return d.toISOString().split('T')[0];
+}
+
 export function calculateUpdate(
     currentData: LotteryData,
     spending: number,
     current_date: Date
 ): LotteryData {
     const { initial_parameters, state } = currentData;
-    const last_update_date = new Date(state.last_update_date);
+    const last_update_date = parseDateUTC(state.last_update_date);
+    // Normalize the incoming date to its UTC calendar day
+    const current_day = new Date(Date.UTC(current_date.getUTCFullYear(), current_date.getUTCMonth(), current_date.getUTCDate()));
 
-    if (current_date < last_update_date) {
+    if (!isFinite(spending) || spending < 0) {
+        throw new Error("Spending must be a valid number greater than or equal to 0");
+    }
+
+    if (current_day < last_update_date) {
         throw new Error("Current date cannot be before the last update date");
     }
 
-    // Calculate days using UTC to avoid timezone issues
-    const days_passed = Math.round((Date.UTC(current_date.getFullYear(), current_date.getMonth(), current_date.getDate()) -
-        Date.UTC(last_update_date.getFullYear(), last_update_date.getMonth(), last_update_date.getDate())) /
-        (1000 * 60 * 60 * 24));
+    const days_passed = Math.round((current_day.getTime() - last_update_date.getTime()) / (1000 * 60 * 60 * 24));
     const investment_apr = initial_parameters.user_inputs.savings_apr;
+    const compound_frequency = initial_parameters.user_inputs.compound_frequency || 365;
     const tax_rate = initial_parameters.investment_tax_rate / 100;
 
     const calculate_new_balance = (old_balance: number) => {
         if (old_balance <= 0) return 0;
-        const monthly_rate = investment_apr / 100 / 12;
-        const effective_daily_rate = Math.pow(1 + monthly_rate, 12 / 365) - 1;
-
-        const gross_new_balance = old_balance * Math.pow(1 + effective_daily_rate, days_passed);
+        // Grow at the user's compounding frequency, the same convention the
+        // withdrawal-limit math uses. The previous code always compounded
+        // monthly here while the withdrawal math used compound_frequency.
+        const period_rate = investment_apr / 100 / compound_frequency;
+        const gross_new_balance = old_balance * Math.pow(1 + period_rate, compound_frequency * days_passed / 365);
         const gain = gross_new_balance - old_balance;
         const tax_on_gain = gain > 0 ? gain * tax_rate : 0;
         return gross_new_balance - tax_on_gain;
@@ -103,27 +130,25 @@ export function calculateUpdate(
     let new_lump_balance = calculate_new_balance(state.lump_balance);
     let new_annual_balance = calculate_new_balance(state.annual_balance);
 
-    // Add annuity payments
-    const first_payment_year = initial_parameters.start_year;
-    const last_update_year = last_update_date.getFullYear();
-    const current_year = current_date.getFullYear();
-
-    for (let year = last_update_year; year <= current_year; year++) {
-        const years_since_start = year - first_payment_year;
-        const annuity_length = 30; // standard lottery length
-        if (years_since_start <= 0 || years_since_start >= annuity_length) {
-            continue;
-        }
-
-        // Check if anniversary has passed
-        const lastUpdateDateObj = new Date(state.last_update_date);
-        const anniversary_this_year = new Date(lastUpdateDateObj);
-        anniversary_this_year.setFullYear(year);
-
-        if (anniversary_this_year > last_update_date && anniversary_this_year <= current_date) {
-            const new_payment = initial_parameters.base_annuity_payment * Math.pow(initial_parameters.annuity_growth_rate, years_since_start);
+    // Add annuity payments. Payment k (k = 1..29) arrives on the k-th anniversary
+    // of the plan start date. The anniversary month/day always comes from the
+    // start date, never from the last update date: an in-between update (say at
+    // month 3) must not move the payment date to month 3 of the next year, which
+    // is what the old code did, silently dropping payments that had come due.
+    // Plans saved before start_date existed fall back to the last update date's
+    // month/day, matching the old behavior for those plans only.
+    const start_date = initial_parameters.start_date ? parseDateUTC(initial_parameters.start_date) : last_update_date;
+    const annuity_length = 30; // standard lottery length
+    for (let k = 1; k < annuity_length; k++) {
+        const anniversary = new Date(Date.UTC(start_date.getUTCFullYear() + k, start_date.getUTCMonth(), start_date.getUTCDate()));
+        if (anniversary > last_update_date && anniversary <= current_day) {
+            const new_payment = initial_parameters.base_annuity_payment * Math.pow(initial_parameters.annuity_growth_rate, k);
             new_annual_balance += new_payment;
         }
+    }
+
+    if (spending > new_lump_balance + new_annual_balance) {
+        throw new Error("Spending exceeds the total balance of both scenarios");
     }
 
     // Deduct spending proportionally from both accounts based on their balances
@@ -141,14 +166,16 @@ export function calculateUpdate(
         ...state,
         lump_balance: new_lump_balance > 0 ? new_lump_balance : 0,
         annual_balance: new_annual_balance > 0 ? new_annual_balance : 0,
-        last_update_date: current_date.toISOString().split('T')[0],
+        last_update_date: dateToUTCString(current_day),
         years_passed: total_days_passed / 365.25,
     };
 
     return { initial_parameters, state: newState };
 }
 
-// 2024/2025 Federal Tax Brackets (Single Filer)
+// 2024 Federal Tax Brackets (Single Filer). These are the 2024 thresholds for
+// every filing status below; they are used only to estimate tax on interest
+// in the withdrawal-limit model, not to compute anyone's actual tax bill.
 const FEDERAL_BRACKETS_SINGLE = [
     { min: 0, max: 11600, rate: 0.10 },
     { min: 11601, max: 47150, rate: 0.12 },
@@ -179,22 +206,43 @@ const FEDERAL_BRACKETS_HEAD_OF_HOUSEHOLD = [
     { min: 609351, max: Infinity, rate: 0.37 },
 ];
 
+// 2024 Federal Tax Brackets (Married Filing Separately): half the joint
+// thresholds, with the 37% bracket starting at 365,600. The old code silently
+// used the single-filer brackets for this status, which understates the tax.
+const FEDERAL_BRACKETS_MARRIED_SEPARATE = [
+    { min: 0, max: 11600, rate: 0.10 },
+    { min: 11601, max: 47150, rate: 0.12 },
+    { min: 47151, max: 100525, rate: 0.22 },
+    { min: 100526, max: 191950, rate: 0.24 },
+    { min: 191951, max: 243725, rate: 0.32 },
+    { min: 243726, max: 365600, rate: 0.35 },
+    { min: 365601, max: Infinity, rate: 0.37 },
+];
+
 function calcFederalTax(taxableIncome: number, filing_status: string): number {
     let brackets = FEDERAL_BRACKETS_SINGLE;
     if (filing_status === 'married_joint') brackets = FEDERAL_BRACKETS_MARRIED_JOINT;
+    if (filing_status === 'married_separate') brackets = FEDERAL_BRACKETS_MARRIED_SEPARATE;
     if (filing_status === 'head_of_household') brackets = FEDERAL_BRACKETS_HEAD_OF_HOUSEHOLD;
 
-    // married_separate uses single brackets usually
-
     let tax = 0;
-    let remainingIncome = taxableIncome;
+    let previousMax = 0;
     for (const bracket of brackets) {
-        if (remainingIncome <= 0) break;
-        const taxableInBracket = Math.min(remainingIncome, bracket.max - bracket.min + 1);
-        tax += taxableInBracket * bracket.rate;
-        remainingIncome -= taxableInBracket;
+        if (taxableIncome <= previousMax) break;
+        const taxableInBracket = Math.min(taxableIncome, bracket.max) - previousMax;
+        if (taxableInBracket > 0) tax += taxableInBracket * bracket.rate;
+        previousMax = bracket.max;
     }
     return tax;
+}
+
+// Level per-period payment that amortizes PV down to FV over n periods at a
+// per-period rate r. Works for negative rates too (for example a real rate
+// below zero when inflation exceeds the after-tax return).
+function levelPayment(PV: number, FV: number, r: number, n: number): number {
+    if (n <= 0) return 0;
+    if (Math.abs(r) < 1e-12) return (PV - FV) / n;
+    return (PV - FV / Math.pow(1 + r, n)) * (r / (1 - Math.pow(1 + r, -n)));
 }
 
 function calculateDeterministicWithdrawal(
@@ -206,10 +254,12 @@ function calculateDeterministicWithdrawal(
     periods_per_year: number,
     filing_status: string,
     state_tax_interest: number,
-    local_tax_interest: number
-): { gross: number, net: number, annual_tax: number } {
+    local_tax_interest: number,
+    inflation_rate: number = 0,
+    target_today: number = 0
+): { gross: number, net: number, real: number, annual_tax: number } {
 
-    if (years <= 0 || PV <= 0) return { gross: 0, net: 0, annual_tax: 0 };
+    if (years <= 0 || PV <= 0) return { gross: 0, net: 0, real: 0, annual_tax: 0 };
 
     // Effective annual rate
     const EAR = Math.pow(1 + (APR / 100) / compound_frequency, compound_frequency) - 1;
@@ -234,24 +284,24 @@ function calculateDeterministicWithdrawal(
 
     const n = years * periods_per_year;
 
-    let W_gross = 0;
-    let W_net = 0;
+    const W_gross = levelPayment(PV, FV, r_gross, n);
+    const W_net = levelPayment(PV, FV, r_net, n);
 
-    if (r_gross > 0) {
-        W_gross = (PV - FV / Math.pow(1 + r_gross, n)) * (r_gross / (1 - Math.pow(1 + r_gross, -n)));
-    } else {
-        W_gross = (PV - FV) / n;
-    }
-
-    if (r_net > 0) {
-        W_net = (PV - FV / Math.pow(1 + r_net, n)) * (r_net / (1 - Math.pow(1 + r_net, -n)));
-    } else {
-        W_net = (PV - FV) / n;
-    }
+    // Real (today's dollars) payment: solve the same amortization at the
+    // inflation-adjusted after-tax rate, against the legacy target in today's
+    // dollars (target_today). The result is a payment whose purchasing power
+    // stays level. The old code instead multiplied the nominal payment by the
+    // discount factor for the FULL horizon, which values every payment as if
+    // it arrived on the last day and understated the real figure by roughly
+    // the whole inflation factor (about 8x at 3.5% over 60 years).
+    const inflation_per_period = Math.pow(1 + inflation_rate, 1 / periods_per_year) - 1;
+    const r_real = (1 + r_net) / (1 + inflation_per_period) - 1;
+    const W_real = levelPayment(PV, target_today, r_real, n);
 
     return {
         gross: W_gross,
         net: W_net,
+        real: W_real,
         annual_tax: total_annual_tax
     };
 }
@@ -280,15 +330,14 @@ export function calculateWithdrawalLimits(data: LotteryData) {
                 periods_per_year,
                 user_inputs.filing_status || 'single',
                 user_inputs.state_tax_interest || 0,
-                user_inputs.local_tax_interest || 0
+                user_inputs.local_tax_interest || 0,
+                inflation_rate,
+                target_today
             );
-
-            // Deflate back to today's dollars (real) vs nominal
-            const discount_factor = Math.pow(1 + (inflation_rate / periods_per_year), -years_remaining * periods_per_year); // Rough simplistic deflate for UX
 
             return {
                 nominal: result.net,
-                real: result.net * discount_factor,
+                real: result.real,
                 annual_tax: result.annual_tax
             };
         };
@@ -301,20 +350,21 @@ export function calculateWithdrawalLimits(data: LotteryData) {
         };
     };
 
-    // Calculate future PV of annuity payments (simple version for UX display)
+    // Present value of the annuity payments still to come, discounted at the
+    // same effective annual rate the rest of the model uses (derived from
+    // savings_apr at the user's compounding frequency). The old code derived
+    // a daily rate from a monthly-compounding assumption instead, which did
+    // not match either the update growth or the withdrawal math.
     let pv_future_payments = 0;
     const years_of_payments_made = Math.floor(state.years_passed);
-    const investment_apr = user_inputs.savings_apr;
-    const daily_rate = Math.pow(1 + (investment_apr / 100 / 12), 12 / 365) - 1;
+    const compound_frequency = user_inputs.compound_frequency || 365;
+    const EAR = Math.pow(1 + (user_inputs.savings_apr / 100) / compound_frequency, compound_frequency) - 1;
 
-    // Note: User prompt instructed we can treat the lump sum as the main functional balance,
-    // but we'll maintain the annuity fallback to prevent UI breaking.
     const annuity_payout_years = 30;
     for (let i = years_of_payments_made + 1; i < annuity_payout_years; i++) {
         const payment_amount = initial_parameters.base_annuity_payment * Math.pow(initial_parameters.annuity_growth_rate, i);
         const years_to_payment = i - state.years_passed;
-        const days_to_payment = years_to_payment * 365.25;
-        pv_future_payments += payment_amount / Math.pow(1 + daily_rate, days_to_payment);
+        pv_future_payments += payment_amount / Math.pow(1 + EAR, years_to_payment);
     }
     const total_annuity_principal = state.annual_balance + pv_future_payments;
 

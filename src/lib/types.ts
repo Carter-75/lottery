@@ -31,6 +31,7 @@ export interface InitialParameters {
   
   // Calculated values
   start_year: number;
+  start_date?: string; // "YYYY-MM-DD" the plan was created; annuity payment anniversaries fall on this month/day. Optional for data saved before it existed.
   lump_sum_net: number;         // Net lump sum after tax
   base_annuity_payment: number; // First year's payment for a growing annuity
   annuity_growth_rate: number;  // How much the annuity payment increases each year (e.g., 1.05 for 5%)

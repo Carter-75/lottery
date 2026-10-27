@@ -10,6 +10,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
+import { saveLotteryData, loadLotteryData, clearLotteryData } from '@/lib/storage';
 
 export default function Home() {
   const [data, setData] = useState<LotteryData | null>(null);
@@ -19,29 +20,25 @@ export default function Home() {
   const { width, height } = useWindowSize();
   const { isIframe, isPortfolioEmbed } = useIframe();
 
-  // Enhanced data persistence with error handling
+  // Data persistence goes through src/lib/storage.ts, the same module the
+  // import/export code uses, so the saved format and the exported format can
+  // never drift apart again. loadLotteryData also accepts the raw format this
+  // page wrote in earlier versions, so existing saved plans still load.
   const saveToLocalStorage = useCallback((data: LotteryData) => {
-    try {
-      localStorage.setItem('lotteryData', JSON.stringify(data));
-    } catch (err) {
-      console.error('Failed to save data to localStorage:', err);
+    if (!saveLotteryData(data)) {
       setError('Failed to save data. Please try again.');
     }
   }, []);
 
   const loadFromLocalStorage = useCallback(() => {
     try {
-      const savedData = localStorage.getItem('lotteryData');
+      const savedData = loadLotteryData();
       if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        // Validate the data structure
-        if (parsedData && parsedData.initial_parameters && parsedData.state) {
-          setData(parsedData);
-        }
+        setData(savedData);
       }
     } catch (err) {
       console.error('Failed to load data from localStorage:', err);
-      localStorage.removeItem('lotteryData'); // Clear corrupted data
+      clearLotteryData(); // Clear corrupted data
     } finally {
       setIsLoading(false);
     }
@@ -66,7 +63,7 @@ export default function Home() {
 
   const handleReset = useCallback(() => {
     try {
-      localStorage.removeItem('lotteryData');
+      clearLotteryData();
       setData(null);
       setShowConfetti(false);
       setError(null);
@@ -145,8 +142,9 @@ export default function Home() {
                         maxWidth: '600px',
                         margin: '0 auto'
                       }}>
-                        Compare lump sum vs annuity payments, calculate sustainable withdrawal rates, 
-                        and plan your financial future with our professional-grade analysis tools.
+                        Compare lump sum vs annuity payments, calculate sustainable withdrawal rates,
+                        and model a long-term spending plan. A personal project, built as an
+                        estimates-only planning tool.
                       </p>
                     )}
                   </div>
@@ -177,7 +175,7 @@ export default function Home() {
             <div className="container">
               <div className="content has-text-centered">
                 <p style={{ color: 'var(--text-tertiary)', fontSize: '0.9rem' }}>
-                  Professional financial planning tools for lottery winners.
+                  A personal-project calculator for planning hypothetical lottery winnings.
                   <br />
                   <small>
                     This calculator provides estimates for informational purposes only. 

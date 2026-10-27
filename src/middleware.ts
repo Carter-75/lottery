@@ -7,8 +7,7 @@ export function middleware(request: NextRequest) {
 
   // Get the referrer to determine if this is an iframe request
   const referrer = request.headers.get('referer')
-  const userAgent = request.headers.get('user-agent') || ''
-  
+
   // Define authorized iframe domains
   const authorizedDomains = [
     'https://carter-portfolio.fyi',
@@ -42,20 +41,22 @@ export function middleware(request: NextRequest) {
     'Content-Security-Policy': `
       default-src 'self';
       script-src 'self' 'unsafe-inline' 'unsafe-eval';
-      style-src 'self' 'unsafe-inline';
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       img-src 'self' data: blob: https:;
       font-src 'self' data: https:;
-      connect-src 'self' ws: wss: https:;
+      connect-src 'self' ws: wss:;
       frame-ancestors ${frameAncestors};
       base-uri 'self';
       form-action 'self';
     `.replace(/\s+/g, ' ').trim(),
-    
-    // X-Frame-Options - Legacy header kept consistent with Carter's other
-    // sites: ALLOWALL lets the CSP frame-ancestors policy above decide who
-    // may frame this site, instead of contradicting it with SAMEORIGIN/DENY.
-    'X-Frame-Options': 'ALLOWALL',
-    
+
+    // No X-Frame-Options header is sent at all. ALLOWALL, the value this site
+    // used to send, is not a valid X-Frame-Options value (the only valid ones
+    // are DENY and SAMEORIGIN); browsers ignore it, so it provided no control
+    // and only looked like one. Framing is governed solely by the CSP
+    // frame-ancestors allowlist above, which is the modern mechanism and the
+    // one that actually decides whether the portfolio may embed this page.
+
     // Other security headers
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'origin-when-cross-origin',
